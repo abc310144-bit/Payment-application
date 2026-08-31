@@ -136,26 +136,63 @@
 
 .invoice-match {
   margin-top: 12px;
-  padding: 8px 10px;
+  padding: 12px 14px;
   border-radius: 6px;
   font-size: 13px;
   line-height: 1.55;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .invoice-match.is-ok {
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
-  color: #389e0d;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  color: #1b5e20;
 }
 
 .invoice-match.is-bad {
-  background: #fff2f0;
-  border: 1px solid #ffccc7;
-  color: #cf1322;
+  background: #ffebee;
+  border: 1px solid #ef9a9a;
+  color: #c62828;
+}
+
+.invoice-match-amounts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 20px;
+}
+
+.invoice-match-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.invoice-match-row span {
+  font-size: 12px;
+  opacity: 0.88;
+}
+
+.invoice-match-row strong {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.invoice-match-status {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 @media (max-width: 720px) {
   .monthly-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .invoice-match-amounts {
     grid-template-columns: 1fr;
   }
 }

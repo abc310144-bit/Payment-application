@@ -206,10 +206,35 @@ export function VoucherDetailsPanel({ app }: Props) {
             ))}
           </dl>
           <div className={`invoice-match${invoiceOk ? ' is-ok' : ' is-bad'}`}>
-            發票金額加總 {formatAmount(invoiceSum, app.overview?.currency)}
-            ／貴公司開立發票金額(含稅){' '}
-            {formatAmount(invoiceTarget, app.overview?.currency)}
-            。{invoiceSumHint(invoiceSum, invoiceTarget, app.overview?.currency)}
+            <div className="invoice-match-amounts">
+              <div className="invoice-match-row">
+                <span>貴公司開立發票金額(含稅)</span>
+                <strong>
+                  {formatAmount(invoiceTarget, app.overview?.currency)}
+                </strong>
+              </div>
+              <div className="invoice-match-row">
+                <span>所需發票總金額</span>
+                <strong>
+                  {formatAmount(invoiceTarget, app.overview?.currency)}
+                </strong>
+              </div>
+              <div className="invoice-match-row">
+                <span>目前發票總金額</span>
+                <strong>
+                  {formatAmount(invoiceSum, app.overview?.currency)}
+                </strong>
+              </div>
+            </div>
+            <p className="invoice-match-status">
+              {invoiceOk
+                ? isForeignCurrency(app.overview?.currency)
+                  ? '目前發票總金額已符合所需金額（外幣允許 ±3）。'
+                  : '目前發票總金額已等於所需發票總金額。'
+                : isForeignCurrency(app.overview?.currency)
+                  ? '目前發票總金額與所需金額不相符（外幣允許 ±3），請調整發票。'
+                  : '目前發票總金額與所需發票總金額不相等，請調整發票。'}
+            </p>
           </div>
         </div>
       )}

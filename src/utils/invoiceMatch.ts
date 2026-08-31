@@ -31,10 +31,10 @@ export function invoiceSumHint(
   const foreign = isForeignCurrency(currency)
   if (invoiceSumMatchesTarget(invoiceSum, target, currency)) {
     return foreign
-      ? '發票金額加總已符合貴公司開立發票金額（含稅，允許 ±3）。'
-      : '發票金額加總已等於貴公司開立發票金額（含稅）。'
+      ? '目前發票總金額已符合所需發票總金額（外幣允許 ±3）。'
+      : '目前發票總金額已等於所需發票總金額。'
   }
   return foreign
-    ? '外幣：全部發票金額加總須與「貴公司開立發票金額(含稅)」相差不超過 3。'
-    : '全部發票金額加總須等於「貴公司開立發票金額(含稅)」。'
+    ? '外幣：目前發票總金額須與所需發票總金額相差不超過 3。'
+    : '目前發票總金額須等於所需發票總金額。'
 }
