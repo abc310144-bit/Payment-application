@@ -66,7 +66,7 @@ export function parseMonthlySummaryWorkbook(data: ArrayBuffer): MonthlySummaryIm
   const paymentIdx = headerIndex(headers, ['金流處理費'])
   const marketingIdx = headerIndex(headers, ['行銷推廣費'])
   const eventIdx = headerIndex(headers, ['活動贊助費'])
-  const logisticsIdx = headerIndex(headers, ['運費攤提', '物流分攤費', '流程分攤費'])
+  const logisticsIdx = headerIndex(headers, ['運費攤提', '物流分攤費'])
   const laborIdx = headerIndex(headers, ['人工處理費'])
   const warehouseIdx = headerIndex(headers, ['倉租加總', '倉庫加總'])
   const absorptionIdx = headerIndex(headers, ['吸收額', '報表調整項目'])

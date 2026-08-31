@@ -49,7 +49,7 @@ export const MONTHLY_SETTLEMENT_FIELDS: {
   { key: 'paymentProcessingFee', label: '金流處理費' },
   { key: 'marketingFee', label: '行銷推廣費' },
   { key: 'eventFee', label: '活動贊助費' },
-  { key: 'logisticsFee', label: '流程分攤費' },
+  { key: 'logisticsFee', label: '物流分攤費' },
   { key: 'laborFee', label: '人工處理費' },
   { key: 'warehouseTotal', label: '倉庫加總' },
   { key: 'adjustment', label: '報表調整項目' },
