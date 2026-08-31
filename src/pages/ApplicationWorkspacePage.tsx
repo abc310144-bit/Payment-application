@@ -136,8 +136,14 @@ function toForm(app: StoredApplication): PaymentOverviewForm {
       currency: app.overview.currency,
       paymentMethod: app.overview.paymentMethod,
       remittanceFee: app.overview.remittanceFee,
-      totalAmount: sumAmounts(app.vouchers.map((item) => item.payAmount)),
+      totalAmount:
+        app.overview.monthlyTotals?.companyInvoiceAmount ??
+        sumAmounts(app.vouchers.map((item) => item.payAmount)),
       expectedPaymentDate: app.overview.expectedPaymentDate,
+      vendorTaxId: app.overview.vendorTaxId,
+      cooperationMode: app.overview.cooperationMode,
+      vendorName: app.overview.vendorName,
+      monthlyTotals: app.overview.monthlyTotals,
     }
   }
 
@@ -170,7 +176,8 @@ function OverviewTab({
   const handleSubmit = (form: PaymentOverviewForm) => {
     const overview: ApplicationOverview = {
       ...form,
-      vendorName: getPayeeDisplayName(form.vendorId, form.paymentType),
+      vendorName:
+        form.vendorName || getPayeeDisplayName(form.vendorId, form.paymentType),
     }
     updateOverview(app.id, overview)
   }

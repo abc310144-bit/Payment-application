@@ -11,7 +11,8 @@ export function PaymentOverviewPage() {
   const handleSubmit = (form: PaymentOverviewForm) => {
     const created = createApplication({
       ...form,
-      vendorName: getPayeeDisplayName(form.vendorId, form.paymentType),
+      vendorName:
+        form.vendorName || getPayeeDisplayName(form.vendorId, form.paymentType),
     })
     navigate(`/applications/${created.id}/details`)
   }

@@ -40,6 +40,7 @@ interface Props {
   autoPurpose?: VoucherPurpose
   autoSettlementMonth?: string
   initial?: VoucherDetail
+  variant?: 'default' | 'um-invoice'
   onClose: () => void
   onSave: (detail: VoucherDetail) => void
 }
@@ -70,14 +71,18 @@ export function AddDetailModal({
   autoPurpose,
   autoSettlementMonth,
   initial,
+  variant = 'default',
   onClose,
   onSave,
 }: Props) {
   const isEdit = Boolean(initial)
+  const invoiceOnly = variant === 'um-invoice'
   const taxLockedByCurrency = isForeignCurrency(currency)
   const allowDecimal = allowsDecimalAmount(currency)
   const styles = getVoucherStyles(paymentType)
-  const startPurpose = initial?.purpose ?? autoPurpose ?? '其他費用'
+  const startPurpose = invoiceOnly
+    ? 'URMART月結廠商'
+    : (initial?.purpose ?? autoPurpose ?? '其他費用')
   const secondMeta0 = PURPOSE_SECOND_FIELD[startPurpose]
 
   const [purpose, setPurpose] = useState<VoucherPurpose>(startPurpose)
@@ -88,9 +93,11 @@ export function AddDetailModal({
   const [secondFrom, setSecondFrom] = useState(initial?.secondFrom ?? '')
   const [secondTo, setSecondTo] = useState(initial?.secondTo ?? '')
   const [voucherStyle, setVoucherStyle] = useState(
-    initial?.voucherStyle && styles.includes(initial.voucherStyle)
-      ? initial.voucherStyle
-      : styles[0],
+    invoiceOnly
+      ? '發票'
+      : initial?.voucherStyle && styles.includes(initial.voucherStyle)
+        ? initial.voucherStyle
+        : styles[0],
   )
   const [invoiceFormat, setInvoiceFormat] = useState(initial?.invoiceFormat ?? '')
   const [invoiceNo, setInvoiceNo] = useState(initial?.invoiceNo ?? '')
@@ -163,13 +170,15 @@ export function AddDetailModal({
 
   const validate = () => {
     const next: Record<string, string> = {}
-    if (second.kind === 'dateRange' && (!secondFrom || !secondTo)) {
-      next.second = `請設定${second.label}`
-    } else if (second.kind === 'dateRange' && secondFrom > secondTo) {
-      next.second = `${second.label}的結束日不可早於開始日`
-    }
-    if (second.kind !== 'dateRange' && !secondText.trim()) {
-      next.second = `請輸入${second.label}`
+    if (!invoiceOnly) {
+      if (second.kind === 'dateRange' && (!secondFrom || !secondTo)) {
+        next.second = `請設定${second.label}`
+      } else if (second.kind === 'dateRange' && secondFrom > secondTo) {
+        next.second = `${second.label}的結束日不可早於開始日`
+      }
+      if (second.kind !== 'dateRange' && !secondText.trim()) {
+        next.second = `請輸入${second.label}`
+      }
     }
     if (showInvoiceFormat && !invoiceFormat) next.invoiceFormat = '請選擇發票格式'
     if (!invoiceNo.trim()) next.invoiceNo = '請輸入發票號碼(憑證號碼)'
@@ -202,10 +211,10 @@ export function AddDetailModal({
       secondText,
       secondFrom,
       secondTo,
-      voucherStyle,
-      invoiceFormat: showInvoiceFormat ? invoiceFormat : '',
+      voucherStyle: invoiceOnly ? '發票' : voucherStyle,
+      invoiceFormat: showInvoiceFormat || invoiceOnly ? invoiceFormat : '',
       invoiceNo: invoiceNo.trim(),
-      invoiceDate: showInvoiceFormat ? invoiceDate : '',
+      invoiceDate: showInvoiceFormat || invoiceOnly ? invoiceDate : '',
       taxable: effectiveTaxable,
       ...computed,
       status: initial?.status ?? '草稿',
@@ -225,12 +234,21 @@ export function AddDetailModal({
         aria-labelledby="add-detail-title"
       >
         <div className="modal-head">
-          <h2 id="add-detail-title">{isEdit ? '編輯明細' : '新增明細'}</h2>
+          <h2 id="add-detail-title">
+            {invoiceOnly
+              ? isEdit
+                ? '編輯發票'
+                : '新增發票'
+              : isEdit
+                ? '編輯明細'
+                : '新增明細'}
+          </h2>
           <button type="button" className="modal-close" onClick={onClose}>
             ×
           </button>
         </div>
 
+        {!invoiceOnly && (
         <label className="modal-row">
           <span className="required">款項用途</span>
           <select
@@ -242,7 +260,9 @@ export function AddDetailModal({
             ))}
           </select>
         </label>
+        )}
 
+        {!invoiceOnly && (
         <div className="modal-row">
           <span className="required">{second.label}</span>
           <div className="modal-field">
@@ -276,7 +296,9 @@ export function AddDetailModal({
             <FieldError message={errors.second} />
           </div>
         </div>
+        )}
 
+        {!invoiceOnly && (
         <label className="modal-row">
           <span className="required">憑證樣式</span>
           <select
@@ -295,6 +317,7 @@ export function AddDetailModal({
             ))}
           </select>
         </label>
+        )}
 
         {showInvoiceFormat && (
           <div className="modal-row">

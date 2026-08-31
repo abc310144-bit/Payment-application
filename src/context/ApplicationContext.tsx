@@ -124,13 +124,14 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
 
     const createApplication = (overview: ApplicationOverview) => {
       const seq = String(applications.length + 1).padStart(3, '0')
+      const umTotal = overview.monthlyTotals?.companyInvoiceAmount
       const created: StoredApplication = {
         id: `DRAFT-${Date.now()}`,
         applicationNo: `PA${todayISO().replaceAll('-', '')}${seq}`,
         paymentType: overview.paymentType,
         applicant: overview.applicant,
         detailCount: 0,
-        totalAmount: 0,
+        totalAmount: umTotal ?? 0,
         vouchers: [],
         createdAt: nowStamp(),
         expectedPaymentDate: overview.expectedPaymentDate,
@@ -169,7 +170,11 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
     }
 
     const withTotals = (row: StoredApplication): StoredApplication => {
-      const totalAmount = sumAmounts(row.vouchers.map((item) => item.payAmount))
+      const umTotal = row.overview?.monthlyTotals?.companyInvoiceAmount
+      const totalAmount =
+        row.paymentType === 'URMART 月結廠商' && umTotal != null
+          ? umTotal
+          : sumAmounts(row.vouchers.map((item) => item.payAmount))
       return {
         ...row,
         detailCount: row.vouchers.length,

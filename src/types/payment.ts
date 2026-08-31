@@ -1,3 +1,5 @@
+import type { MonthlySettlementTotals } from './monthlySettlement'
+
 /** 申請款項類型 */
 export type PaymentType =
   | '個人代墊報支'
@@ -66,6 +68,14 @@ export interface PaymentOverviewForm {
   remittanceFee: RemittanceFeeBearer
   totalAmount: number | null
   expectedPaymentDate: string
+  vendorTaxId?: string
+  cooperationMode?: string
+  vendorName?: string
+  monthlyTotals?: MonthlySettlementTotals | null
+}
+
+export function isUmMonthlyType(type: PaymentType | string | undefined) {
+  return type === 'URMART 月結廠商'
 }
 
 export interface PaymentApplication {
@@ -128,7 +138,8 @@ export const PAYMENT_TYPE_META: Record<PaymentType, PaymentTypeMeta> = {
   'URMART 月結廠商': {
     type: 'URMART 月結廠商',
     title: 'URMART 月結廠商',
-    description: '文案說明待確認。選擇此項並設定結算月後，新增明細將自動帶入款項用途以及結算月。',
+    description:
+      '匯入月結總結表後選擇廠商，結算月與憑證明細彙總欄自動帶入；發票請手動新增。',
     ruleCategory: '待確認',
     needsSettlementMonth: true,
   },
