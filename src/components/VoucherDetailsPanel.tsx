@@ -101,7 +101,7 @@ export function VoucherDetailsPanel({ app }: Props) {
     (!umMode || invoiceOk)
   const rows = app.vouchers.slice(0, pageSize)
   const showExchangeRate = isForeignCurrency(app.overview?.currency)
-  const colCount = showExchangeRate ? 15 : 14
+  const colCount = (showExchangeRate ? 15 : 14) - (umMode ? 1 : 0)
 
   const openAdd = () => {
     setEditing(undefined)
@@ -221,7 +221,7 @@ export function VoucherDetailsPanel({ app }: Props) {
               <th>ID</th>
               <th>廠商統編</th>
               <th>款項用途</th>
-              <th>備註單號</th>
+              {!umMode && <th>備註單號</th>}
               <th>憑證樣式</th>
               <th>發票格式</th>
               <th>發票號碼(憑證號碼)</th>
@@ -252,7 +252,7 @@ export function VoucherDetailsPanel({ app }: Props) {
                     <td>{idx + 1}</td>
                     <td>{row.vendorTaxId}</td>
                     <td>{row.purpose}</td>
-                    <td>{row.remarkNo}</td>
+                    {!umMode && <td>{row.remarkNo}</td>}
                     <td>{row.voucherStyle}</td>
                     <td>{dashOrValue(row.invoiceFormat)}</td>
                     <td>{dashOrValue(row.invoiceNo)}</td>
