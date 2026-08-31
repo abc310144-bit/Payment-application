@@ -274,13 +274,19 @@ function waitForImages(root: HTMLElement) {
   )
 }
 
+const PDF_MARGIN_MM = 8
+
 function mountPdfNode(html: string) {
   const host = document.createElement('div')
   host.setAttribute('data-voucher-pdf', 'true')
-  host.style.cssText = 'position:fixed;left:-10000px;top:0;background:#fff;'
+  // Keep the node in normal layout (not off-screen). html2canvas + a
+  // left:-10000px host can stack sections on top of each other.
+  host.style.cssText =
+    'position:fixed;left:0;top:0;width:794px;background:#fff;z-index:-1;pointer-events:none;opacity:0.01;'
   host.innerHTML = `
     <style>
       .pdf-root { width: 794px; padding: 24px 28px 36px; background: #fff; color: #1f1f1f; font-family: "Microsoft JhengHei", "PMingLiU", "Noto Sans TC", serif; }
+      .pay-form { display: block; }
       .pay-company { text-align: center; font-size: 22px; font-weight: 700; letter-spacing: 2px; }
       .pay-title { text-align: center; font-size: 28px; font-weight: 700; letter-spacing: 8px; margin: 4px 0 10px; }
       .pay-date { text-align: center; font-size: 14px; margin-bottom: 16px; }
@@ -298,7 +304,7 @@ function mountPdfNode(html: string) {
       .sign-table th { height: 28px; }
       .sign-cell { height: 88px; }
       .pay-footnotes { margin-top: 10px; font-size: 11px; line-height: 1.65; color: #1f1f1f; }
-      .pdf-attachments { margin-top: 28px; }
+      .pdf-attachments { margin-top: 28px; display: block; }
       .pdf-attachments h2 { margin: 0 0 14px; font-size: 18px; }
       .pdf-attach-block { margin-bottom: 18px; }
       .pdf-attach-block h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; }
@@ -313,27 +319,84 @@ function mountPdfNode(html: string) {
   return host
 }
 
-function addCanvasToPdf(pdf: jsPDF, canvas: HTMLCanvasElement) {
-  const img = canvas.toDataURL('image/png')
+function pageMetrics(pdf: jsPDF) {
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
-  const margin = 8
-  const usableWidth = pageWidth - margin * 2
-  const usableHeight = pageHeight - margin * 2
-  const imgHeight = (canvas.height * usableWidth) / canvas.width
-  let heightLeft = imgHeight
-  let y = margin
-  pdf.addImage(img, 'PNG', margin, y, usableWidth, imgHeight)
-  heightLeft -= usableHeight
-  while (heightLeft > 0) {
-    y = margin - (imgHeight - heightLeft)
-    pdf.addPage()
-    pdf.addImage(img, 'PNG', margin, y, usableWidth, imgHeight)
-    heightLeft -= usableHeight
+  return {
+    pageWidth,
+    pageHeight,
+    margin: PDF_MARGIN_MM,
+    usableWidth: pageWidth - PDF_MARGIN_MM * 2,
+    usableHeight: pageHeight - PDF_MARGIN_MM * 2,
   }
-  if (imgHeight <= usableHeight) return margin + imgHeight
-  const remainder = imgHeight % usableHeight
-  return remainder === 0 ? pageHeight - margin : margin + remainder
+}
+
+function sliceCanvas(
+  canvas: HTMLCanvasElement,
+  srcY: number,
+  srcHeight: number,
+) {
+  const height = Math.max(1, Math.round(srcHeight))
+  const slice = document.createElement('canvas')
+  slice.width = canvas.width
+  slice.height = height
+  const ctx = slice.getContext('2d')
+  if (!ctx) throw new Error('無法建立 PDF 畫布')
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, slice.width, slice.height)
+  ctx.drawImage(
+    canvas,
+    0,
+    Math.round(srcY),
+    canvas.width,
+    height,
+    0,
+    0,
+    canvas.width,
+    height,
+  )
+  return slice
+}
+
+/** Draw a canvas in page-sized strips. Never paint a taller-than-page image. */
+function appendCanvasPaged(
+  pdf: jsPDF,
+  canvas: HTMLCanvasElement,
+  cursor: { y: number },
+  gapMm = 3,
+) {
+  const { pageHeight, margin, usableWidth } = pageMetrics(pdf)
+  if (canvas.width < 1 || canvas.height < 1) return
+  const fullHeightMm = (canvas.height * usableWidth) / canvas.width
+  const pxPerMm = canvas.height / fullHeightMm
+  let srcY = 0
+  while (srcY < canvas.height) {
+    let availMm = pageHeight - margin - cursor.y
+    if (availMm < 8 && cursor.y > margin + 0.5) {
+      pdf.addPage()
+      cursor.y = margin
+      availMm = pageHeight - margin * 2
+    }
+    const srcRemaining = canvas.height - srcY
+    const slicePx = Math.max(1, Math.min(srcRemaining, Math.floor(availMm * pxPerMm)))
+    const slice = sliceCanvas(canvas, srcY, slicePx)
+    const drawH = slicePx / pxPerMm
+    pdf.addImage(
+      slice.toDataURL('image/png'),
+      'PNG',
+      margin,
+      cursor.y,
+      usableWidth,
+      drawH,
+    )
+    cursor.y += drawH
+    srcY += slicePx
+    if (srcY < canvas.height) {
+      pdf.addPage()
+      cursor.y = margin
+    }
+  }
+  cursor.y += gapMm
 }
 
 async function captureElement(el: HTMLElement) {
@@ -341,35 +404,21 @@ async function captureElement(el: HTMLElement) {
     scale: 2,
     backgroundColor: '#ffffff',
     useCORS: true,
+    logging: false,
+    scrollX: 0,
+    scrollY: 0,
+    windowWidth: Math.max(el.scrollWidth, 794),
+    windowHeight: Math.max(el.scrollHeight, 1),
+    onclone(doc) {
+      const cloned = doc.querySelector('[data-voucher-pdf]')
+      if (cloned instanceof HTMLElement) {
+        cloned.style.left = '0'
+        cloned.style.top = '0'
+        cloned.style.opacity = '1'
+        cloned.style.zIndex = '0'
+      }
+    },
   })
-}
-
-function appendCanvasKeepTogether(
-  pdf: jsPDF,
-  canvas: HTMLCanvasElement,
-  cursor: { y: number },
-) {
-  const pageWidth = pdf.internal.pageSize.getWidth()
-  const pageHeight = pdf.internal.pageSize.getHeight()
-  const margin = 8
-  const usableWidth = pageWidth - margin * 2
-  const usableHeight = pageHeight - margin * 2
-  const gap = 3
-  let drawWidth = usableWidth
-  let drawHeight = (canvas.height * usableWidth) / canvas.width
-  if (drawHeight > usableHeight) {
-    const scale = usableHeight / drawHeight
-    drawHeight = usableHeight
-    drawWidth = usableWidth * scale
-  }
-  const remaining = pageHeight - margin - cursor.y
-  if (cursor.y > margin + 0.5 && drawHeight > remaining) {
-    pdf.addPage()
-    cursor.y = margin
-  }
-  const img = canvas.toDataURL('image/png')
-  pdf.addImage(img, 'PNG', margin, cursor.y, drawWidth, drawHeight)
-  cursor.y += drawHeight + gap
 }
 
 function createWorkingPdf() {
@@ -442,22 +491,39 @@ export async function downloadVoucherPdf(app: StoredApplication): Promise<Vouche
     const form = root.querySelector('.pay-form') as HTMLElement | null
     if (form) {
       const formCanvas = await captureElement(form)
-      cursor.y = addCanvasToPdf(ensureWorking(), formCanvas) + 3
+      appendCanvasPaged(ensureWorking(), formCanvas, cursor)
     }
 
-    const nodes = Array.from(
-      root.querySelectorAll<HTMLElement>('.pdf-keep, .pdf-embed-pdf'),
-    )
-    for (const node of nodes) {
-      if (node.classList.contains('pdf-embed-pdf')) {
-        const url = node.dataset.pdfUrl
-        const name = node.dataset.pdfName || 'document.pdf'
-        await flushWorking()
-        if (url) await appendUploadedPdf(merged, url, name, failed)
-        continue
+    const attachments = root.querySelector(
+      '.pdf-attachments',
+    ) as HTMLElement | null
+    if (attachments) {
+      const { pageHeight, margin } = pageMetrics(ensureWorking())
+      if (cursor.y > margin + 0.5 && pageHeight - margin - cursor.y < 28) {
+        ensureWorking().addPage()
+        cursor.y = margin
       }
-      const canvas = await captureElement(node)
-      appendCanvasKeepTogether(ensureWorking(), canvas, cursor)
+
+      const hasEmbeddedPdf = Boolean(attachments.querySelector('.pdf-embed-pdf'))
+      if (!hasEmbeddedPdf) {
+        const canvas = await captureElement(attachments)
+        appendCanvasPaged(ensureWorking(), canvas, cursor)
+      } else {
+        const nodes = Array.from(
+          attachments.querySelectorAll<HTMLElement>('.pdf-keep, .pdf-embed-pdf'),
+        )
+        for (const node of nodes) {
+          if (node.classList.contains('pdf-embed-pdf')) {
+            const url = node.dataset.pdfUrl
+            const name = node.dataset.pdfName || 'document.pdf'
+            await flushWorking()
+            if (url) await appendUploadedPdf(merged, url, name, failed)
+            continue
+          }
+          const canvas = await captureElement(node)
+          appendCanvasPaged(ensureWorking(), canvas, cursor)
+        }
+      }
     }
     await flushWorking()
 
