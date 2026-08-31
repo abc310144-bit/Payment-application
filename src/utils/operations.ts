@@ -4,7 +4,7 @@ import type {
   PaymentType,
   UserRole,
 } from '../types/payment'
-import { TYPES_NEED_WRITEOFF } from '../types/payment'
+import { completesOnApprove, TYPES_NEED_WRITEOFF } from '../types/payment'
 
 export interface RowOperation {
   key: string
@@ -48,7 +48,8 @@ export function getRowOperations(
     role === '建檔人' &&
     TYPES_NEED_WRITEOFF.includes(paymentType) &&
     (status === '待核銷' || status === '部分核銷')
-  const canPay = role === '財務' && status === '待付款'
+  const canPay =
+    role === '財務' && status === '待付款' && !completesOnApprove(paymentType)
   const canAuditFile = status === '已完成'
 
   const enabled: Record<string, boolean> = {

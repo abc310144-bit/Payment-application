@@ -1,5 +1,5 @@
 import type { PaymentDateRuleCategory, PaymentType } from '../types/payment'
-import { PAYMENT_TYPE_META } from '../types/payment'
+import { isChannelFeeType, PAYMENT_TYPE_META } from '../types/payment'
 
 /** YYYY-MM-DD */
 export function formatDateISO(date: Date): string {
@@ -86,13 +86,14 @@ export function isExpectedDateEditable(type: PaymentType): boolean {
 
 /**
  * 依申請款項與申請日計算預計付款日
- * 通路後扣／月結規則待確認，暫依一般付款規則
+ * 通路費用不需預計付款日；月結規則待確認，暫依一般付款規則
  */
 export function calcExpectedPaymentDate(
   type: PaymentType,
   applicationDateISO: string,
   currentExpected?: string,
 ): string {
+  if (isChannelFeeType(type)) return ''
   if (!applicationDateISO) return ''
 
   const category = getRuleCategory(type)
@@ -121,7 +122,7 @@ export function getExpectedDateHint(type: PaymentType): string {
     return '目前類別「預付款」：預設申請日，可於申請日起 5 日內（含）調整。'
   }
   if (category === '待確認') {
-    return '目前類別「廠商後扣／月結」規則待確認，暫依一般付款截止規則自動帶入（不可手動修改）。'
+    return '目前類別「URMART 月結」規則待確認，暫依一般付款截止規則自動帶入（不可手動修改）。'
   }
   return '目前類別「一般」：依每月截止規則自動帶入（不可手動修改）。'
 }

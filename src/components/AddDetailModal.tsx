@@ -85,7 +85,11 @@ export function AddDetailModal({
   const allowDecimal = allowsDecimalAmount(currency)
   const styles = getVoucherStyles(paymentType)
   const startPurpose = invoiceOnly
-    ? 'URMART月結廠商'
+    ? (autoPurpose ??
+        initial?.purpose ??
+        (paymentType === '通路費用 (通路後扣)'
+          ? '通路費用(通路後扣)'
+          : 'URMART月結廠商'))
     : (initial?.purpose ?? autoPurpose ?? '其他費用')
   const secondMeta0 = PURPOSE_SECOND_FIELD[startPurpose]
 

@@ -15,6 +15,7 @@ import {
   PAYMENT_TYPE_META,
   PAYMENT_TYPES,
   REMITTANCE_FEE_OPTIONS,
+  isChannelFeeType,
   isUmMonthlyType,
   type CurrencyCode,
   type PaymentMethod,
@@ -130,6 +131,7 @@ export function OverviewForm({
   const expectedEditable = isExpectedDateEditable(form.paymentType) && !readOnly
   const onlyRemittance = isPettyCashType(form.paymentType)
   const umMonthly = isUmMonthlyType(form.paymentType)
+  const channelFee = isChannelFeeType(form.paymentType)
   const locked = readOnly
   const payeeItems = useMemo(() => {
     if (onlyRemittance) {
@@ -293,7 +295,7 @@ export function OverviewForm({
     if (!form.currency) next.currency = '必填'
     if (!form.paymentMethod) next.paymentMethod = '必填'
     if (!form.remittanceFee) next.remittanceFee = '必填'
-    if (!form.expectedPaymentDate) next.expectedPaymentDate = '必填'
+    if (!channelFee && !form.expectedPaymentDate) next.expectedPaymentDate = '必填'
 
     if (
       isExpectedDateEditable(form.paymentType) &&
@@ -316,7 +318,10 @@ export function OverviewForm({
     const nextErrors = validate()
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
-    onSubmit(form)
+    onSubmit({
+      ...form,
+      expectedPaymentDate: channelFee ? '' : form.expectedPaymentDate,
+    })
     setSaved(true)
   }
 
@@ -596,6 +601,7 @@ export function OverviewForm({
             </div>
           </div>
 
+          {!channelFee && (
           <div className="form-row">
             <label className="form-label required" htmlFor="expectedPaymentDate">
               預計付款日
@@ -640,7 +646,7 @@ export function OverviewForm({
                     須在申請日起 5 日內（含）。
                   </li>
                   <li>
-                    <strong>廠商後扣、月結：</strong>
+                    <strong>URMART 月結：</strong>
                     規則待確認（原型暫依一般付款規則）。
                   </li>
                 </ul>
@@ -650,6 +656,7 @@ export function OverviewForm({
               </div>
             </div>
           </div>
+          )}
         </div>
       </form>
     </div>

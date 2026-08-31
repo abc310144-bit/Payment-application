@@ -12,8 +12,9 @@ interface Props {
   onAction: (action: string, row: StoredApplication) => void
 }
 
-function displayDate(value: string | null) {
-  return value ?? '-'
+function displayDate(value: string | null | undefined) {
+  if (value == null || String(value).trim() === '') return '-'
+  return value
 }
 
 function payeeName(row: StoredApplication) {

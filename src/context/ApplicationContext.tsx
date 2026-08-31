@@ -5,7 +5,11 @@ import type {
   PaymentApplication,
   PaymentOverviewForm,
 } from '../types/payment'
-import { isForeignCurrency, PAYMENT_TYPE_META } from '../types/payment'
+import {
+  completesOnApprove,
+  isForeignCurrency,
+  PAYMENT_TYPE_META,
+} from '../types/payment'
 import {
   commitAmount,
   FOREIGN_MIN_AMOUNT,
@@ -77,6 +81,11 @@ interface ApplicationContextValue {
 
 const ApplicationContext = createContext<ApplicationContextValue | null>(null)
 
+function optionalDate(value?: string | null) {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
+}
+
 function nowStamp() {
   const d = new Date()
   const hh = String(d.getHours()).padStart(2, '0')
@@ -134,7 +143,7 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
         totalAmount: umTotal ?? 0,
         vouchers: [],
         createdAt: nowStamp(),
-        expectedPaymentDate: overview.expectedPaymentDate,
+        expectedPaymentDate: optionalDate(overview.expectedPaymentDate),
         actualPaymentDate: null,
         rejectReason: null,
         status: '草稿',
@@ -154,7 +163,7 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
                 ...row,
                 paymentType: overview.paymentType,
                 applicant: overview.applicant,
-                expectedPaymentDate: overview.expectedPaymentDate,
+                expectedPaymentDate: optionalDate(overview.expectedPaymentDate),
                 overview,
               }
             : row,
@@ -219,9 +228,12 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
       if (!current) return undefined
       const updated = withTotals({
         ...current,
-        status: '待付款',
+        status: completesOnApprove(current.paymentType) ? '已完成' : '待付款',
         rejectReason: null,
-        vouchers: mapDetailsOnParentApprove(current.vouchers),
+        vouchers: mapDetailsOnParentApprove(
+          current.vouchers,
+          current.paymentType,
+        ),
       })
       setApplications((prev) =>
         prev.map((row) => (row.id === id ? updated : row)),

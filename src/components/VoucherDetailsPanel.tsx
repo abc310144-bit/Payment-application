@@ -19,6 +19,7 @@ import {
 import {
   formatExchangeRate,
   isForeignCurrency,
+  isInvoiceOnlyType,
   isUmMonthlyType,
 } from '../types/payment'
 import {
@@ -66,6 +67,9 @@ export function VoucherDetailsPanel({ app }: Props) {
       ? ''
       : getVendorTaxId(app.overview?.vendorId)
   const umMode = isUmMonthlyType(app.paymentType) && Boolean(app.overview?.monthlyTotals)
+  const invoiceOnlyMode =
+    isInvoiceOnlyType(app.paymentType) &&
+    (!isUmMonthlyType(app.paymentType) || umMode)
   const monthlyTotals = app.overview?.monthlyTotals
   const autoFill = useMemo(() => {
     const month = app.overview?.settlementMonth || ''
@@ -101,7 +105,7 @@ export function VoucherDetailsPanel({ app }: Props) {
     (!umMode || invoiceOk)
   const rows = app.vouchers.slice(0, pageSize)
   const showExchangeRate = isForeignCurrency(app.overview?.currency)
-  const colCount = (showExchangeRate ? 15 : 14) - (umMode ? 1 : 0)
+  const colCount = (showExchangeRate ? 15 : 14) - (invoiceOnlyMode ? 1 : 0)
 
   const openAdd = () => {
     setEditing(undefined)
@@ -163,7 +167,7 @@ export function VoucherDetailsPanel({ app }: Props) {
             disabled={!canAdd || parentLocked}
             onClick={() => canAdd && openAdd()}
           >
-            {umMode ? '+ 新增發票' : '+ 新增明細'}
+            {invoiceOnlyMode ? '+ 新增發票' : '+ 新增明細'}
           </button>
           <button
             type="button"
@@ -246,7 +250,7 @@ export function VoucherDetailsPanel({ app }: Props) {
               <th>ID</th>
               <th>廠商統編</th>
               <th>款項用途</th>
-              {!umMode && <th>備註單號</th>}
+              {!invoiceOnlyMode && <th>備註單號</th>}
               <th>憑證樣式</th>
               <th>發票格式</th>
               <th>發票號碼(憑證號碼)</th>
@@ -264,7 +268,7 @@ export function VoucherDetailsPanel({ app }: Props) {
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={colCount} className="empty-cell">
-                  {umMode ? '尚無已保存之發票' : '尚無已保存之憑證明細'}
+                  {invoiceOnlyMode ? '尚無已保存之發票' : '尚無已保存之憑證明細'}
                 </td>
               </tr>
             ) : (
@@ -277,7 +281,7 @@ export function VoucherDetailsPanel({ app }: Props) {
                     <td>{idx + 1}</td>
                     <td>{row.vendorTaxId}</td>
                     <td>{row.purpose}</td>
-                    {!umMode && <td>{row.remarkNo}</td>}
+                    {!invoiceOnlyMode && <td>{row.remarkNo}</td>}
                     <td>{row.voucherStyle}</td>
                     <td>{dashOrValue(row.invoiceFormat)}</td>
                     <td>{dashOrValue(row.invoiceNo)}</td>
@@ -333,7 +337,9 @@ export function VoucherDetailsPanel({ app }: Props) {
       <p className="details-foot">
         {umMode
           ? '請點「+ 新增發票」補上憑證。全部發票金額加總須等於「貴公司開立發票金額(含稅)」；外幣允許相差 ±3。彙總欄位唯讀。'
-          : '請點「+ 新增明細」以列出憑證明細。本表僅顯示已保存之憑證。首次導出會下載該批草稿明細 PDF，並將草稿改為待審核；之後可重複下載同一份檔案且狀態不變。母單已完成後僅可檢視。'}
+          : invoiceOnlyMode
+            ? '請點「+ 新增發票」新增一至多張發票。首次導出會下載該批草稿發票 PDF，並將草稿改為待審核；財務審核通過後單據直接已完成。'
+            : '請點「+ 新增明細」以列出憑證明細。本表僅顯示已保存之憑證。首次導出會下載該批草稿明細 PDF，並將草稿改為待審核；之後可重複下載同一份檔案且狀態不變。母單已完成後僅可檢視。'}
       </p>
 
       {modal && (
@@ -343,7 +349,7 @@ export function VoucherDetailsPanel({ app }: Props) {
           defaultTaxId={defaultTaxId}
           autoPurpose={autoFill?.purpose}
           autoSettlementMonth={autoFill?.month}
-          variant={umMode ? 'um-invoice' : 'default'}
+          variant={invoiceOnlyMode ? 'um-invoice' : 'default'}
           initial={editing}
           onClose={() => setModal(null)}
           onSave={(detail) => {

@@ -1,4 +1,4 @@
-import type { PaymentType } from '../types/payment'
+import { completesOnApprove, type PaymentType } from '../types/payment'
 import type { VoucherDetail, VoucherDetailStatus } from '../types/voucher'
 import { needsWriteoffHistory } from './writeoff'
 
@@ -10,9 +10,15 @@ import { needsWriteoffHistory } from './writeoff'
  * 一般單：草稿／待審核／審核通過／已完成（無待核銷）
  * 預付單：完成付款後逐列 待核銷 → 部分核銷 → 核銷完成；全部核銷完成後母單為已完成
  */
-export function mapDetailsOnParentApprove(details: VoucherDetail[]) {
+export function mapDetailsOnParentApprove(
+  details: VoucherDetail[],
+  paymentType?: PaymentType,
+) {
+  const next: VoucherDetailStatus = completesOnApprove(paymentType)
+    ? '已完成'
+    : '審核通過'
   return details.map((item) =>
-    item.status === '待審核' ? { ...item, status: '審核通過' as const } : item,
+    item.status === '待審核' ? { ...item, status: next } : item,
   )
 }
 

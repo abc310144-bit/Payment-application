@@ -78,6 +78,20 @@ export function isUmMonthlyType(type: PaymentType | string | undefined) {
   return type === 'URMART 月結廠商'
 }
 
+export function isChannelFeeType(type: PaymentType | string | undefined) {
+  return type === '通路費用 (通路後扣)'
+}
+
+/** 憑證明細只開發票（UM 月結、通路費用） */
+export function isInvoiceOnlyType(type: PaymentType | string | undefined) {
+  return isUmMonthlyType(type) || isChannelFeeType(type)
+}
+
+/** 財務審核通過後直接已完成，不經待付款 */
+export function completesOnApprove(type: PaymentType | string | undefined) {
+  return isChannelFeeType(type)
+}
+
 export interface PaymentApplication {
   id: string
   applicationNo: string
@@ -131,7 +145,8 @@ export const PAYMENT_TYPE_META: Record<PaymentType, PaymentTypeMeta> = {
   '通路費用 (通路後扣)': {
     type: '通路費用 (通路後扣)',
     title: '通路費用（通路後扣）',
-    description: '文案說明待確認。選擇此項並設定結算月後，新增明細將自動帶入款項用途以及結算月。',
+    description:
+      '設定結算月後選擇付款對象，憑證明細以發票新增；可新增多張。導出後線下審核，財務通過即已完成。',
     ruleCategory: '待確認',
     needsSettlementMonth: true,
   },
