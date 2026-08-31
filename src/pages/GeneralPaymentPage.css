@@ -1,0 +1,123 @@
+.list-page .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.list-page h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.filter-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  overflow: visible;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.filter-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.filter-grid .field-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.filter-grid input:not([type='radio']),
+.filter-grid select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1f1f1f;
+  background: #fff;
+}
+
+.filter-grid .date-range-picker {
+  height: 36px;
+  padding: 0 8px 0 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.filter-label {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.filter-payee {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.payee-kind-radios {
+  display: flex;
+  gap: 14px;
+}
+
+.payee-kind-radios label {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #434343;
+}
+
+.payee-kind-radios input {
+  width: auto;
+  height: auto;
+  margin: 0;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.notice {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: #e6f4ff;
+  border: 1px solid #91caff;
+  border-radius: 6px;
+  color: #1677ff;
+  font-size: 13px;
+}
+
+.result-meta {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+@media (max-width: 960px) {
+  .filter-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

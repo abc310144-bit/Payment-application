@@ -1,0 +1,62 @@
+.table-card {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-scroll {
+  overflow: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: left;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.data-table th {
+  background: #fafafa;
+  color: #595959;
+  font-weight: 600;
+}
+
+.data-table tbody tr:hover {
+  background: #fafcff;
+}
+
+.mono {
+  font-family: "Cascadia Code", Consolas, monospace;
+  color: #1677ff;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty-cell {
+  text-align: center;
+  color: #8c8c8c;
+  padding: 40px 14px !important;
+}
+
+.ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 300px;
+}
+
+.btn-link.danger {
+  color: #ff4d4f;
+}

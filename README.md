@@ -1,0 +1,35 @@
+# 付款申請系統（一般付款）
+
+從 GitHub 公開專案 [`abc310144-bit/Payment-application`](https://github.com/abc310144-bit/Payment-application) 還原的財務付款申請 DEMO。換電腦後原始檔未帶過來時，可直接在此繼續操作列表、總覽、憑證明細、核銷與導出 PDF。
+
+規格見 [`PRD.md`](./PRD.md)。原型不串正式 API／資料庫，角色以畫面切換模擬。
+
+## 本機啟動
+
+```bash
+npm install
+npm run dev
+```
+
+瀏覽器開啟開發伺服器位址（預設 `http://127.0.0.1:43141`）。
+
+建置：
+
+```bash
+npm run build
+npm run preview
+```
+
+## 畫面流程
+
+1. **一般付款列表**：篩選申請單、依角色操作（編輯／審核／完成付款／核銷）。
+2. **付款總覽**：建立或修改母單（申請款項、付款對象、預計付款日等）。
+3. **款項憑證明細**：新增明細、上傳憑證、導出審核 PDF、財務審核。
+4. **核銷歷史**：僅「廠商預付 / 訂金」且財務完成付款後出現。
+
+右上角可切換 **建檔人**（`ruby.lee`）與 **財務**。
+
+## 來源
+
+- GitHub：https://github.com/abc310144-bit/Payment-application
+- 公開帳號與 Cursor 環境帳號不同，本倉庫是把公開原始碼接回來繼續開發。

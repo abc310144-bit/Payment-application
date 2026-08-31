@@ -1,0 +1,98 @@
+:root {
+  font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #1f1f1f;
+  background: #f5f6f8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: #2b5cff;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #1f4ae6;
+}
+
+.btn-default {
+  background: #fff;
+  border-color: #d9d9d9;
+  color: #434343;
+}
+
+.btn-default:hover {
+  border-color: #2b5cff;
+  color: #2b5cff;
+}
+
+.btn-danger {
+  background: #fff;
+  border-color: #ffccc7;
+  color: #ff4d4f;
+}
+
+.btn-danger:hover {
+  background: #fff1f0;
+}
+
+.btn-link {
+  height: auto;
+  padding: 0 6px;
+  background: transparent;
+  color: #2b5cff;
+  border: none;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+.btn-link:disabled {
+  color: #bfbfbf;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.btn-link.danger:disabled {
+  color: #ffccc7;
+}

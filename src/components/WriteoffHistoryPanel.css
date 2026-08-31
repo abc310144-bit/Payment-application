@@ -1,0 +1,135 @@
+.writeoff-panel {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 16px 20px 20px;
+}
+
+.writeoff-summary {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: #1f1f1f;
+}
+
+.writeoff-table-wrap {
+  overflow: auto;
+}
+
+.writeoff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.writeoff-table th,
+.writeoff-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: left;
+}
+
+.writeoff-table th {
+  background: #fafafa;
+  color: #595959;
+  font-weight: 600;
+}
+
+.writeoff-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.writeoff-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.writeoff-ops button {
+  border: none;
+  background: transparent;
+  color: #2b5cff;
+  cursor: pointer;
+  padding: 0;
+  font-size: 13px;
+}
+
+.writeoff-ops button:disabled {
+  color: #bfbfbf;
+  cursor: not-allowed;
+}
+
+.writeoff-ops button.danger {
+  color: #cf1322;
+}
+
+.writeoff-ops button.danger:hover:not(:disabled) {
+  color: #a8071a;
+}
+
+.writeoff-child td {
+  background: #fafafa;
+  color: #595959;
+  font-size: 12px;
+}
+
+.writeoff-child td:first-child {
+  padding-left: 36px;
+}
+
+.writeoff-empty {
+  color: #8c8c8c;
+  text-align: center;
+}
+
+.view-preview-img {
+  display: block;
+  max-width: 100%;
+  margin-top: 8px;
+  border: 1px solid #d6e4ff;
+  border-radius: 6px;
+}
+
+.writeback-summary {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.view-meta {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.view-meta div {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.view-meta dt,
+.view-preview-label {
+  color: #595959;
+}
+
+.view-preview {
+  min-height: 180px;
+  margin-top: 8px;
+  background: #eef6ff;
+  border: 1px solid #d6e4ff;
+  border-radius: 6px;
+}
+
+.view-files-card {
+  width: min(720px, 100%);
+}
+
+.writeback-file-body {
+  margin-top: 4px;
+}
+
+.writeback-file-body .file-preview img {
+  max-height: 520px;
+}

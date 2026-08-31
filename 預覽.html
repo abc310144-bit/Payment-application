@@ -1,0 +1,2576 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>付款申請 DEMO 預覽</title>
+  <style>
+    :root { font-family: "Microsoft JhengHei", "Noto Sans TC", sans-serif; color: #1f1f1f; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #f5f6f8; }
+    button, input, select, textarea { font: inherit; }
+    a { color: inherit; text-decoration: none; }
+    .app-shell { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar { background: #001529; color: #fff; padding: 16px 0 24px; }
+    .sidebar-brand { padding: 8px 20px 20px; font-size: 16px; font-weight: 700; }
+    .nav-group-title, .nav-subgroup-title { padding: 0 20px 8px; font-size: 12px; color: rgba(255,255,255,.45); }
+    .nav-subgroup-title { padding: 4px 20px 8px; color: rgba(255,255,255,.55); }
+    .nav-link { display: block; padding: 8px 20px 8px 32px; font-size: 14px; color: rgba(255,255,255,.75); cursor: pointer; }
+    .nav-link.active { color: #fff; background: #1677ff; }
+    .main-area { display: flex; flex-direction: column; min-width: 0; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 24px; background: #fff; border-bottom: 1px solid #f0f0f0; }
+    .breadcrumb { font-size: 13px; color: #8c8c8c; }
+    .breadcrumb span { margin: 0 6px; color: #bfbfbf; }
+    .role-switcher { display: flex; align-items: center; gap: 8px; }
+    .role-label { font-size: 12px; color: #8c8c8c; }
+    .role-tabs { display: flex; padding: 2px; background: #f5f5f5; border-radius: 6px; }
+    .role-tab { border: none; background: transparent; height: 28px; padding: 0 12px; border-radius: 4px; cursor: pointer; color: #595959; }
+    .role-tab.active { background: #fff; color: #1677ff; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .page-content { padding: 20px 24px 40px; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    h1 { margin: 0; font-size: 20px; font-weight: 700; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 14px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; font-size: 13px; }
+    .btn-primary { background: #2b5cff; color: #fff; }
+    .btn-default { background: #fff; border-color: #d9d9d9; color: #434343; }
+    .btn-link { height: auto; padding: 0 6px; background: transparent; color: #2b5cff; border: none; cursor: pointer; }
+    .btn-link.danger { color: #ff4d4f; }
+    .btn-link:disabled { color: #bfbfbf; cursor: not-allowed; text-decoration: none; }
+    .btn-link.danger:disabled { color: #ffccc7; }
+    .filter-card, .table-card, .overview-card, .summary-card { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; }
+    .filter-card { padding: 16px 20px; margin-bottom: 16px; }
+    .filter-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 16px; }
+    .filter-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #8c8c8c; }
+    .filter-grid input:not([type="radio"]), .filter-grid select, .form-control input, .form-control select {
+      height: 36px; padding: 0 10px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; color: #1f1f1f; background: #fff;
+    }
+    .filter-payee { display:flex; flex-direction:column; gap:6px; min-width:0; font-size:12px; color:#8c8c8c; }
+    .payee-kind-radios { display:flex; gap:14px; }
+    .payee-kind-radios label { display:inline-flex; flex-direction:row; align-items:center; gap:4px; font-size:13px; color:#434343; }
+    .payee-kind-radios input { width:auto; height:auto; margin:0; }
+    .date-mode-field { display:flex; flex-direction:column; gap:6px; font-size:12px; color:#8c8c8c; min-width:0; position:relative; z-index:3; }
+    .date-range-picker { display:flex; align-items:center; width:100%; height:36px; padding:0 8px 0 10px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; min-width:0; cursor:pointer; text-align:left; }
+    .date-range-picker.open { border-color:#1677ff; box-shadow:0 0 0 2px rgba(22,119,255,.12); }
+    .date-range-placeholder, .date-range-value { flex:1; min-width:0; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .date-range-placeholder { color:#bfbfbf; }
+    .date-range-value { color:#1f1f1f; }
+    .date-range-arrow { flex:none; margin:0 8px; color:#bfbfbf; font-size:12px; line-height:1; }
+    .date-range-icon { flex:none; display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; color:#bfbfbf; }
+    .date-range-panel { position:absolute; top:calc(100% + 4px); left:0; z-index:40; display:flex; background:#fff; border:1px solid #e8e8e8; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); overflow:hidden; }
+    .date-cal { width:252px; padding:8px 12px 12px; }
+    .date-cal + .date-cal { border-left:1px solid #f0f0f0; }
+    .date-cal-head { display:flex; align-items:center; justify-content:space-between; height:32px; margin-bottom:4px; }
+    .date-cal-title { font-size:14px; font-weight:600; color:#1f1f1f; }
+    .date-cal-nav { display:flex; gap:2px; }
+    .date-cal-nav button { width:24px; height:24px; border:0; background:transparent; color:#8c8c8c; cursor:pointer; font-size:14px; line-height:1; border-radius:4px; }
+    .date-cal-nav-spacer { width:50px; }
+    .date-cal-week, .date-cal-grid { display:grid; grid-template-columns:repeat(7, 1fr); }
+    .date-cal-week span { height:28px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#8c8c8c; }
+    .date-cal-day { height:28px; margin:2px 0; border:1px solid transparent; background:transparent; border-radius:4px; color:#1f1f1f; font-size:13px; cursor:pointer; }
+    .date-cal-day.is-muted { color:#bfbfbf; }
+    .date-cal-day.is-in-range { background:#e6f4ff; border-radius:0; }
+    .date-cal-day.is-edge { background:#1677ff; color:#fff; border-color:#1677ff; }
+    .date-cal-day.is-today { border-color:#1677ff; }
+    .date-cal-day.is-hover:not(.is-edge), .date-cal-day:hover:not(.is-edge) { border-color:#1677ff; }
+    .filter-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+    .notice { margin-bottom: 12px; padding: 10px 12px; background: #e6f4ff; border: 1px solid #91caff; border-radius: 6px; color: #1677ff; font-size: 13px; }
+    .result-meta { margin-bottom: 8px; font-size: 13px; color: #8c8c8c; }
+    .table-scroll { overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid #f0f0f0; text-align: left; white-space: nowrap; }
+    th { background: #fafafa; color: #595959; }
+    .mono { font-family: Consolas, monospace; color: #1677ff; }
+    .num { text-align: right; }
+    .ops { display: flex; flex-wrap: wrap; gap: 4px; min-width: 300px; }
+    .status { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+    .status-草稿 { background: #f0f0f0; color: #595959; }
+    .status-待審核 { background: #e6f4ff; color: #1677ff; }
+    .status-審核不通過 { background: #fff1f0; color: #ff4d4f; }
+    .status-待付款 { background: #fff7e6; color: #d46b08; }
+    .status-待核銷 { background: #f9f0ff; color: #722ed1; }
+    .status-部分核銷 { background: #fff0f6; color: #c41d7f; }
+    .status-核銷完成 { background: #e6fffb; color: #08979c; }
+    .status-已完成 { background: #f6ffed; color: #389e0d; }
+    .status-已作廢 { background: #f5f5f5; color: #8c8c8c; }
+    .status-審核通過 { background: #e6fffb; color: #08979c; }
+    .overview-page { max-width: 920px; }
+    .overview-card { padding: 28px 32px 36px; }
+    .form-row { display: grid; grid-template-columns: 160px minmax(0, 420px); gap: 12px 20px; margin-bottom: 22px; }
+    .form-label { padding-top: 8px; font-size: 14px; color: #595959; text-align: right; }
+    .form-label.required::before { content: '*'; color: #ff4d4f; margin-right: 4px; }
+    .vendor-select { position:relative; width:100%; }
+    .vendor-trigger { width:100%; height:36px; padding:0 32px 0 10px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; text-align:left; cursor:pointer; position:relative; }
+    .vendor-trigger.open, .vendor-trigger:focus { border-color:#2b5cff; box-shadow:0 0 0 2px rgba(43,92,255,.12); outline:none; }
+    .vendor-select.is-disabled .vendor-trigger { background:#f5f5f5; color:#8c8c8c; cursor:not-allowed; }
+    .vendor-placeholder { color:#bfbfbf; font-size:14px; }
+    .vendor-value { color:#1f1f1f; font-size:14px; }
+    .vendor-caret { position:absolute; right:10px; top:50%; transform:translateY(-50%); color:#8c8c8c; font-size:12px; }
+    .vendor-dropdown { position:absolute; z-index:30; top:calc(100% + 4px); left:0; right:0; background:#fff; border:1px solid #e8e8e8; border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); overflow:hidden; }
+    .vendor-search { width:100%; height:36px; border:none; border-bottom:1px solid #f0f0f0; padding:0 12px; outline:none; font-size:14px; }
+    .vendor-list { list-style:none; margin:0; padding:4px 0; max-height:220px; overflow:auto; }
+    .vendor-option { width:100%; display:flex; gap:10px; align-items:center; border:none; background:transparent; padding:8px 12px; text-align:left; cursor:pointer; font-size:14px; }
+    .vendor-option:hover, .vendor-option.selected { background:#f0f5ff; }
+    .vendor-code { color:#8c8c8c; font-family:Consolas,monospace; font-size:12px; min-width:52px; }
+    .vendor-select.has-error .vendor-trigger { border-color:#ff4d4f; }
+    .field-hint { margin: 6px 0 0; font-size: 12px; color: #8c8c8c; }
+    .field-error { margin: 6px 0 0; font-size: 12px; color: #ff4d4f; }
+    .info-box { margin-top: 10px; padding: 12px 14px; background: #f0f7ff; border: 1px solid #c6ddff; border-radius: 6px; }
+    .info-box-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .info-box-desc, .rule-list { font-size: 13px; line-height: 1.55; color: #434343; }
+    .rule-list { margin: 8px 0 0; padding-left: 18px; }
+    .rule-footer { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #91bfff; font-size: 13px; color: #1677ff; font-weight: 500; }
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid #e8e8e8; margin-bottom: 16px; }
+    .tab { border: none; background: transparent; padding: 10px 16px; color: #8c8c8c; }
+    .tab.active { color: #2b5cff; font-weight: 600; border-bottom: 2px solid #2b5cff; margin-bottom: -1px; }
+    .summary-card { padding: 20px 24px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; margin: 0; }
+    .summary-grid dt { font-size: 12px; color: #8c8c8c; margin-bottom: 4px; }
+    .summary-grid dd { margin: 0; font-size: 14px; }
+    .placeholder-note { margin: 20px 0 0; padding: 12px 14px; background: #fafafa; border-radius: 6px; font-size: 13px; color: #8c8c8c; }
+    .save-ok { margin: 0 0 12px; padding: 8px 12px; background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px; color: #389e0d; font-size: 13px; }
+    .mode-banner { margin: 0 0 12px; padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+    .mode-banner.is-edit { background: #f6ffed; border: 1px solid #b7eb8f; color: #389e0d; }
+    .mode-banner.is-view { background: #fafafa; border: 1px solid #e8e8e8; color: #8c8c8c; }
+    .details-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .details-panel { background:#fff; border:1px solid #e8e8e8; border-radius:8px; padding:16px 20px 20px; }
+    .details-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+    .details-meta { display:flex; align-items:center; gap:6px; font-size:13px; color:#8c8c8c; }
+    .details-meta select { height:28px; padding:0 8px; border:1px solid #d9d9d9; border-radius:4px; background:#fff; }
+    .details-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .details-table-wrap { overflow:auto; }
+    .details-table { width:100%; min-width:1280px; border-collapse:collapse; font-size:13px; }
+    .details-table th, .details-table td { padding:10px 12px; border-bottom:1px solid #f0f0f0; white-space:nowrap; text-align:left; }
+    .details-table th { background:#fafafa; color:#595959; }
+    .details-table .num { text-align:right; }
+    .details-ops button { border:none; background:transparent; color:#2b5cff; cursor:pointer; padding:0; margin-right:8px; }
+    .details-ops button:disabled { color:#bfbfbf; cursor:not-allowed; }
+    .writeoff-panel { background:#fff; border:1px solid #e8e8e8; border-radius:8px; padding:16px 20px 20px; }
+    .writeoff-summary { margin:0 0 14px; font-size:14px; }
+    .writeoff-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .writeoff-table th, .writeoff-table td { padding:10px 12px; border-bottom:1px solid #f0f0f0; text-align:left; }
+    .writeoff-table th { background:#fafafa; color:#595959; }
+    .writeoff-table .num { text-align:right; }
+    .writeoff-ops button { border:none; background:transparent; color:#2b5cff; cursor:pointer; padding:0; margin-right:10px; }
+    .writeoff-ops button:disabled { color:#bfbfbf; cursor:not-allowed; }
+    .writeoff-ops button.danger { color:#cf1322; }
+    .writeoff-child td { background:#fafafa; color:#595959; font-size:12px; }
+    .writeoff-child td:first-child { padding-left:36px; }
+    .writeoff-empty { color:#8c8c8c; text-align:center; }
+    .writeback-summary { margin:8px 0 0; font-size:13px; color:#8c8c8c; }
+    .view-meta { display:grid; gap:10px; margin-bottom:16px; font-size:14px; }
+    .view-meta div { display:grid; grid-template-columns:160px minmax(0,1fr); gap:8px; }
+    .view-preview { min-height:180px; margin-top:8px; background:#eef6ff; border:1px solid #d6e4ff; border-radius:6px; }
+    .btn-disabled { background:#f5f5f5; color:#bfbfbf; border:1px solid #f0f0f0; cursor:not-allowed; }
+    .modal-mask { position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.45); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; overflow:auto; }
+    .modal-card { width:min(640px,100%); max-height:calc(100vh - 48px); overflow:auto; background:#fff; border-radius:10px; box-shadow:0 12px 40px rgba(0,0,0,.18); padding:20px 24px 18px; }
+    .modal-card-sm { width:min(480px,100%); }
+    .modal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    .modal-head h2 { margin:0; font-size:18px; }
+    .modal-close { border:none; background:transparent; font-size:22px; color:#8c8c8c; cursor:pointer; }
+    .modal-row { display:grid; grid-template-columns:140px minmax(0,1fr); gap:10px 16px; align-items:start; margin-bottom:14px; }
+    .modal-row > span { font-size:14px; color:#434343; text-align:right; padding-top:8px; }
+    .modal-row > span.required::before, .line-head .required::before, .file-block label.required::before { content:'*'; color:#ff4d4f; margin-right:4px; }
+    .modal-field { min-width:0; }
+    .modal-row input, .modal-row select, .modal-field input, .modal-field select { width:100%; height:36px; padding:0 10px; border:1px solid #d9d9d9; border-radius:6px; }
+    .modal-row input:disabled, .modal-row select:disabled, .modal-field input:disabled, .modal-field select:disabled, .line-row select:disabled { background:#f5f5f5; color:#8c8c8c; cursor:not-allowed; }
+    .modal-field textarea { width:100%; min-height:96px; padding:8px 10px; border:1px solid #d9d9d9; border-radius:6px; font-size:14px; line-height:1.5; resize:vertical; }
+    .modal-field textarea.error { border-color:#ff4d4f; }
+    .ellipsis-bubble { position:fixed; z-index:120; transform:translateY(calc(-100% - 8px)); min-width:180px; max-width:320px; padding:8px 10px; background:#1f1f1f; color:#fff; font-size:12px; line-height:1.5; border-radius:6px; box-shadow:0 6px 16px rgba(0,0,0,.18); white-space:normal; pointer-events:none; }
+    .ellipsis-bubble::after { content:''; position:absolute; left:16px; top:100%; border:6px solid transparent; border-top-color:#1f1f1f; }
+    .date-range { display:flex; align-items:center; gap:8px; }
+    .date-range input { width:auto; min-width:0; flex:1; }
+    .sub-title { font-size:14px; font-weight:600; margin:18px 0 8px; }
+    .line-head, .line-row { display:grid; grid-template-columns:minmax(0,1.4fr) 110px 120px 76px; gap:8px; align-items:start; }
+    .line-head { font-size:12px; color:#8c8c8c; margin-bottom:6px; align-items:center; }
+    .line-cell { min-width:0; }
+    .line-row input, .line-row select { width:100%; height:34px; padding:0 8px; border:1px solid #d9d9d9; border-radius:6px; }
+    .plus-btn, .minus-btn { width:34px; height:34px; border:1px solid #d9d9d9; border-radius:6px; background:#fff; cursor:pointer; font-size:18px; }
+    .minus-btn { color:#ff4d4f; }
+    .line-ops { display:flex; gap:4px; justify-content:flex-end; }
+    .field-error { margin:6px 0 0; font-size:12px; color:#ff4d4f; line-height:1.4; }
+    .empty-cell { text-align:center; color:#8c8c8c; padding:28px 12px; white-space:normal !important; }
+    .file-preview { display:grid; grid-template-columns:88px minmax(0,1fr); gap:12px; margin-bottom:16px; }
+    .file-preview-tag { font-size:13px; font-weight:600; color:#2b5cff; }
+    .file-preview img { max-width:100%; max-height:520px; border:1px solid #f0f0f0; border-radius:6px; }
+    .file-preview-pdf { display:block; width:100%; height:520px; border:1px solid #f0f0f0; border-radius:6px; background:#fff; }
+    .view-files-body { max-height:calc(100vh - 220px); overflow:auto; }
+    .btn:disabled { opacity:.55; cursor:not-allowed; }
+    .untaxed { display:flex; align-items:center; gap:12px; margin:14px 0 8px 140px; }
+    .file-block { margin:8px 0 14px 140px; }
+    .file-block label { display:block; font-size:13px; margin-bottom:6px; }
+    .file-multi { display:inline-flex; align-items:center; justify-content:center; min-width:120px; height:34px; padding:0 16px; border:1px solid #d9d9d9; border-radius:6px; cursor:pointer; }
+    .file-multi input { display:none; }
+    .file-names { margin-top:6px; font-size:12px; color:#8c8c8c; }
+    .modal-foot { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; }
+    .hidden { display: none !important; }
+    input.error, select.error { border-color: #ff4d4f !important; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">財務系統</div>
+      <div class="nav-group-title">財務</div>
+      <div class="nav-subgroup-title">付款申請</div>
+      <a class="nav-link active" id="nav-list">一般付款</a>
+    </aside>
+    <div class="main-area">
+      <header class="topbar">
+        <div class="breadcrumb">財務 <span>/</span> 付款申請 <span>/</span> <span id="crumb">一般付款</span></div>
+        <div class="role-switcher">
+          <span class="role-label">原型角色</span>
+          <div class="role-tabs">
+            <button class="role-tab active" data-role="建檔人">建檔人</button>
+            <button class="role-tab" data-role="財務">財務</button>
+          </div>
+        </div>
+      </header>
+      <div class="file-tip">這是可雙擊開啟的預覽檔（預覽.html）。改這個檔案並重新整理瀏覽器，就能立刻看到畫面。</div>
+      <main class="page-content" id="app"></main>
+    </div>
+  </div>
+<script>
+const TYPES = ['個人代墊報支','廠商實報實銷','廠商預付 / 訂金','通路費用 (通路後扣)','URMART 月結廠商']
+const STATUSES = ['草稿','待審核','審核不通過','待付款','待核銷','部分核銷','已完成','已作廢']
+const META = {
+  '個人代墊報支': { title: '個人代墊報支（零用金）', desc: '我已先用個人款項墊付餐費、車資、雜支等，請公司退款至我的薪資帳戶。', petty: true },
+  '廠商實報實銷': { title: '廠商實報實銷（一般付款）', desc: '已取得廠商開立的正式發票或收據，請公司直接匯款給該廠商。' },
+  '廠商預付 / 訂金': { title: '廠商預付 / 訂金（預付款）', desc: '目前僅有合約或報價單，需先申請款項支付給廠商，事後再補發票核銷。', prepay: true },
+  '通路費用 (通路後扣)': { title: '通路費用（通路後扣）', desc: '文案說明待確認。選擇此項並設定結算月後，新增明細將自動帶入款項用途以及結算月。', settlement: true },
+  'URMART 月結廠商': { title: 'URMART 月結廠商', desc: '文案說明待確認。選擇此項並設定結算月後，新增明細將自動帶入款項用途以及結算月。', settlement: true },
+}
+const VENDORS = [
+  { id: 'v1', code: 'V0001', name: '台灣優瑪特股份有限公司', taxId: '24536815' },
+  { id: 'v2', code: 'V0002', name: '鼎盛物流有限公司', taxId: '88366693' },
+  { id: 'v3', code: 'V0003', name: '新鮮食材行', taxId: '12345678' },
+  { id: 'v4', code: 'V0004', name: '光速印刷社', taxId: '55667788' },
+  { id: 'v5', code: 'V0005', name: '綠意清潔服務', taxId: '99887766' },
+  { id: 'v6', code: 'V0006', name: '雲端科技股份有限公司', taxId: '11223344' },
+  { id: 'v9', code: 'V0009', name: '龍鋒報關有限公司', taxId: '53724680' },
+]
+const EMPLOYEES = [
+  { id:'e1', no:'E0001', account:'ruby.lee', name:'李若比' },
+  { id:'e2', no:'E0002', account:'xiaoming.wang', name:'王小明' },
+  { id:'e3', no:'E0003', account:'meiling.chen', name:'陳美玲' },
+  { id:'e4', no:'E0004', account:'zhiwei.lin', name:'林志偉' },
+  { id:'e5', no:'E0005', account:'yating.huang', name:'黃雅婷' },
+  { id:'e6', no:'E0006', account:'tingyu.zhang', name:'張庭瑜' },
+  { id:'e7', no:'E0007', account:'jiahao.liu', name:'劉家豪' },
+  { id:'e8', no:'E0008', account:'xin.wu', name:'吳欣怡' },
+]
+function isPettyType(type){ return type === '個人代墊報支' }
+function findEmployeeForApplicant(applicant){
+  const key = String(applicant || '').trim()
+  return EMPLOYEES.find((e) => e.account === key || e.name === key) || EMPLOYEES[0]
+}
+function payeeDisplayName(id, type){
+  if (isPettyType(type)) {
+    const e = EMPLOYEES.find((x) => x.id === id)
+    return e ? e.no + ' ' + e.name : ''
+  }
+  const v = VENDORS.find((x) => x.id === id)
+  return v ? v.code + ' ' + v.name : ''
+}
+function payeeList(type){
+  if (isPettyType(type)) {
+    return EMPLOYEES.map((e) => ({ id: e.id, code: e.no, name: e.name + '（' + e.account + '）', search: e.no + ' ' + e.name + ' ' + e.account }))
+  }
+  return VENDORS.map((v) => ({ id: v.id, code: v.code, name: v.name, search: v.code + ' ' + v.name }))
+}
+const ROWS = [
+  { id:'1', no:'PA20260724001', type:'個人代墊報支', applicant:'王小明', details:3, amount:2450, created:'2026-07-20 09:12:00', expected:null, actual:null, reason:null, status:'草稿' },
+  { id:'2', no:'PA20260724002', type:'廠商預付 / 訂金', applicant:'陳美玲', details:1, amount:50000, created:'2026-07-18 14:30:00', expected:null, actual:null, reason:'發票抬頭與公司名稱不符，請重新確認後再送審', status:'審核不通過' },
+  { id:'3', no:'PA20260723015', type:'廠商實報實銷', applicant:'林志偉', details:5, amount:12800, created:'2026-07-16 11:05:00', expected:null, actual:null, reason:null, status:'待審核' },
+  { id:'4', no:'PA20260722008', type:'通路費用 (通路後扣)', applicant:'黃雅婷', details:2, amount:86000, created:'2026-07-15 16:40:00', expected:'2026-07-30', actual:null, reason:null, status:'待付款' },
+  { id:'5', no:'PA20260721021', type:'廠商預付 / 訂金', applicant:'王小明', details:1, amount:120000, created:'2026-07-12 10:22:00', expected:'2026-07-15', actual:'2026-07-15', reason:null, status:'待核銷' },
+  { id:'6', no:'PA20260710007', type:'廠商預付 / 訂金', applicant:'陳美玲', details:2, amount:98000, created:'2026-07-08 09:50:00', expected:'2026-07-10', actual:'2026-07-10', reason:null, status:'部分核銷' },
+  { id:'7', no:'PA20260628003', type:'個人代墊報支', applicant:'張庭瑜', details:4, amount:3180, created:'2026-06-28 13:18:00', expected:'2026-07-02', actual:'2026-07-02', reason:null, status:'已完成' },
+  { id:'8', no:'PA20260719011', type:'URMART 月結廠商', applicant:'林志偉', details:8, amount:256400, created:'2026-07-19 08:33:00', expected:'2026-07-30', actual:null, reason:null, status:'待付款' },
+  { id:'9', no:'PA20260717004', type:'廠商實報實銷', applicant:'黃雅婷', details:2, amount:6420, created:'2026-07-17 17:02:00', expected:null, actual:null, reason:null, status:'待審核' },
+  { id:'10', no:'PA20260705019', type:'通路費用 (通路後扣)', applicant:'張庭瑜', details:3, amount:45200, created:'2026-07-05 15:27:00', expected:'2026-07-15', actual:'2026-07-15', reason:'請補上傳對帳單後再送審', status:'已完成' },
+  { id:'11', no:'PA20260725030', type:'廠商預付 / 訂金', applicant:'王小明', details:1, amount:30000, created:'2026-07-22 10:00:00', expected:'2026-07-25', actual:null, reason:null, status:'待付款' },
+]
+function isForeignCurrency(currency){ return Boolean(currency && currency !== '臺幣TWD') }
+function rowCurrency(row){ return (row && row.overview && row.overview.currency) || '臺幣TWD' }
+function formatExchangeRate(rate){
+  if (rate == null || rate === '' || Number.isNaN(Number(rate))) return '-'
+  return Number(rate).toLocaleString('zh-TW', { maximumFractionDigits: 6, minimumFractionDigits: 0 })
+}
+function sanitizeRateInput(value){
+  const next = String(value || '').replace(/[^\d.]/g, '')
+  const dot = next.indexOf('.')
+  if (dot < 0) return next
+  return next.slice(0, dot) + '.' + next.slice(dot + 1).replace(/\./g, '').slice(0, 6)
+}
+const AMOUNT_DECIMALS = 3
+const FOREIGN_MIN_AMOUNT = 0.001
+function allowsDecimalAmount(currency){ return isForeignCurrency(currency) }
+function roundMoney(n){
+  if (!Number.isFinite(n)) return 0
+  const scale = Math.pow(10, AMOUNT_DECIMALS)
+  return Math.round((n + Number.EPSILON) * scale) / scale
+}
+function parseAmount(value){
+  if (value == null || value === '') return 0
+  const n = typeof value === 'number' ? value : Number(String(value).trim())
+  return Number.isFinite(n) ? n : 0
+}
+function sanitizeAmountInput(value, allowDecimal){
+  const raw = String(value || '')
+  if (!allowDecimal) return raw.replace(/\D/g, '')
+  const next = raw.replace(/[^\d.]/g, '')
+  const dot = next.indexOf('.')
+  if (dot < 0) return next
+  return next.slice(0, dot) + '.' + next.slice(dot + 1).replace(/\./g, '').slice(0, AMOUNT_DECIMALS)
+}
+function isCompleteAmountInput(value, allowDecimal){
+  const trimmed = String(value || '').trim()
+  if (!trimmed || trimmed === '.' || trimmed.endsWith('.')) return false
+  if (!allowDecimal) return /^[1-9]\d*$/.test(trimmed)
+  if (!/^\d*\.?\d+$/.test(trimmed)) return false
+  const frac = trimmed.split('.')[1]
+  if (frac && frac.length > AMOUNT_DECIMALS) return false
+  return parseAmount(trimmed) >= FOREIGN_MIN_AMOUNT
+}
+function amountInputError(value, allowDecimal){
+  if (isCompleteAmountInput(value, allowDecimal)) return ''
+  return allowDecimal ? '請輸入至少 0.001 的金額（最多三位小數）' : '請輸入正整數金額'
+}
+function commitAmount(value, allowDecimal){
+  const n = parseAmount(value)
+  return allowDecimal ? roundMoney(n) : Math.trunc(n)
+}
+function formatAmount(n, currency){
+  const value = parseAmount(n)
+  if (allowsDecimalAmount(currency)) {
+    return roundMoney(value).toLocaleString('zh-TW', { minimumFractionDigits: 0, maximumFractionDigits: AMOUNT_DECIMALS })
+  }
+  return Math.round(value).toLocaleString('zh-TW')
+}
+function formatMoney(n, currency){
+  const body = formatAmount(n, currency)
+  return allowsDecimalAmount(currency) ? body : ('NT$ ' + body)
+}
+function sumAmounts(values){
+  return roundMoney((values || []).reduce(function(sum, n){ return sum + parseAmount(n) }, 0))
+}
+function amountInputFromValue(value, allowDecimal){
+  const n = parseAmount(value)
+  if (n <= 0) return ''
+  return allowDecimal ? String(roundMoney(n)) : String(Math.trunc(n))
+}
+function seedDemoVoucher(row, name){
+  const v = VENDORS[(Number(row.id) - 1) % VENDORS.length] || VENDORS[0]
+  const isPrepay = row.type === '廠商預付 / 訂金'
+  const amt = row.amount
+  return {
+    id: 'V-SEED-' + row.id,
+    vendorTaxId: v.taxId,
+    purpose: isPrepay ? '其他費用' : 'URMART月結廠商',
+    remarkNo: isPrepay ? '2026/07/01 至 2026/07/31' : '2026-07',
+    secondText: isPrepay ? '' : '2026-07',
+    secondFrom: isPrepay ? '2026-07-01' : '',
+    secondTo: isPrepay ? '2026-07-31' : '',
+    voucherStyle: isPrepay ? '合約' : '發票',
+    invoiceFormat: isPrepay ? '' : '21',
+    invoiceNo: isPrepay ? 'CT-202607' : 'AB12345678',
+    invoiceDate: isPrepay ? '' : '2026-07-15',
+    taxable: '未稅',
+    untaxedAmount: amt,
+    taxAmount: 0,
+    payAmount: amt,
+    status: '審核通過',
+    lines: [{ id: 'L-SEED-' + row.id, name: name, taxable: '未稅', amount: amt }],
+    voucherFile: { name: 'voucher.pdf', type: 'application/pdf', url: '' },
+    attachments: [],
+    writebacks: [],
+  }
+}
+ROWS.forEach((r, i) => {
+  if (!r.vouchers) r.vouchers = []
+  if (r.exchangeRate == null) r.exchangeRate = null
+  if (!r.exportedFile) r.exportedFile = null
+  if (!r.overview) {
+    const v = VENDORS[i % VENDORS.length]
+    const vendorId = isPettyType(r.type) ? findEmployeeForApplicant(r.applicant).id : v.id
+    r.overview = {
+      vendor: vendorId,
+      type: r.type,
+      month: (r.type.indexOf('通路') >= 0 || r.type.indexOf('月結') >= 0) ? '2026-07' : '',
+      currency: (r.id === '8' || r.id === '11') ? '美元USD' : '臺幣TWD',
+      vendorName: payeeDisplayName(vendorId, r.type),
+    }
+  }
+  if ((r.id === '8' || r.id === '11') && !r.vouchers.length) {
+    r.vouchers = [seedDemoVoucher(r, r.id === '11' ? '預付訂金' : '月結貨款')]
+  }
+})
+function canEdit(role, status){
+  if (status === '已作廢' || status === '已完成') return false
+  if (role === '財務') return true
+  return status === '草稿' || status === '審核不通過'
+}
+function getRowOps(role, status, type){
+  const canEditNow = canEdit(role, status)
+  const canVoid = status !== '已完成' && status !== '已作廢' && (role === '財務' || status === '草稿' || status === '審核不通過')
+  const canReview = role === '財務' && status === '待審核'
+  const canWriteoff = role === '建檔人' && needsWriteoff(type) && (status === '待核銷' || status === '部分核銷')
+  const canPay = role === '財務' && status === '待付款'
+  const ops = [
+    ['edit','編輯', !canEditNow],
+    ['view','檢視', false],
+    ['void','作廢', !canVoid],
+    ['review','進行審核', !canReview],
+    ['writeoff','進行核銷', !canWriteoff],
+    ['pay','完成付款', !canPay],
+  ]
+  if (status === '已完成') ops.push(['auditFile','檢視審核檔案', false])
+  return ops
+}
+
+const state = {
+  page: 'list',
+  tab: 'overview',
+  currentId: '',
+  role: '建檔人',
+  notice: '',
+  saved: false,
+  modalMode: '',
+  editingId: '',
+  draft: null,
+  viewing: null,
+  writeoffModal: '',
+  writebackTargetId: '',
+  viewingWriteback: null,
+  writebackStyle: '發票',
+  writebackDraft: { invoiceNo:'', invoiceTaxId:'', invoiceDate:'', invoiceFormat:'', amount:'', file:null, error:'', errors:{} },
+  rejectOpen: false,
+  rejectReason: '',
+  rejectError: '',
+  payOpen: false,
+  payTargetId: '',
+  payRate: '',
+  payDate: '',
+  payDateError: '',
+  payError: '',
+  payeeOpen: false,
+  payeeKeyword: '',
+  datePicker: null,
+  filterPayeeOpen: false,
+  filterPayeeKeyword: '',
+  auditOpen: false,
+  auditTargetId: '',
+  filters: { no:'', type:'', status:'', applicant:'', payeeKind:'', payeeId:'', createdFrom:'', createdTo:'', expectedFrom:'', expectedTo:'', actualFrom:'', actualTo:'' },
+  overview: null,
+}
+
+function money(n, currency){ return formatMoney(n, currency) }
+function dash(v){ return v || '-' }
+function clip(text){ return !text ? '-' : (text.length > 20 ? text.slice(0,20) + '...' : text) }
+function reasonCell(text){
+  if (!text) return '-'
+  const truncated = text.length > 20
+  const shown = truncated ? text.slice(0, 20) + '...' : text
+  return `<span class="ellipsis-wrap"${truncated ? ` data-full="${esc(text)}"` : ''}>${esc(shown)}</span>`
+}
+function bindReasonBubbles(){
+  document.querySelectorAll('.ellipsis-wrap[data-full]').forEach((el) => {
+    el.onmouseenter = () => {
+      if (el._bubble) el._bubble.remove()
+      const rect = el.getBoundingClientRect()
+      const bubble = document.createElement('div')
+      bubble.className = 'ellipsis-bubble'
+      bubble.textContent = el.dataset.full
+      bubble.style.left = rect.left + 'px'
+      bubble.style.top = rect.top + 'px'
+      document.body.appendChild(bubble)
+      el._bubble = bubble
+    }
+    el.onmouseleave = () => {
+      if (el._bubble) el._bubble.remove()
+      el._bubble = null
+    }
+  })
+}
+function today(){ const d=new Date(); return d.toISOString().slice(0,10) }
+const WRITEOFF_TYPES = ['廠商預付 / 訂金']
+function needsWriteoff(type){ return WRITEOFF_TYPES.includes(type) }
+function showWriteoffTab(row){ return needsWriteoff(row.type) && Boolean(row.actual) }
+function writebacksOf(item){ return item.writebacks || [] }
+function writtenOffAmount(item){ return sumAmounts(writebacksOf(item).map((rec) => rec.amount)) }
+function remainingWriteoffAmount(item){ return roundMoney(Math.max(0, parseAmount(item.payAmount) - writtenOffAmount(item))) }
+function isWriteoffPhase(status){ return status === '待核銷' || status === '部分核銷' || status === '核銷完成' }
+function nextDetailWriteoffStatus(item){
+  const written = writtenOffAmount(item)
+  const pay = roundMoney(parseAmount(item.payAmount))
+  if (written <= 0) return '待核銷'
+  if (written < pay) return '部分核銷'
+  return '核銷完成'
+}
+function nextParentWriteoffStatus(vouchers){
+  const list = (vouchers || []).filter((item) => isWriteoffPhase(item.status))
+  if (!list.length) return null
+  if (list.every((item) => item.status === '核銷完成')) return '已完成'
+  if (list.every((item) => item.status === '待核銷')) return '待核銷'
+  return '部分核銷'
+}
+function parentUnwrittenRemaining(vouchers){
+  return sumAmounts((vouchers || []).filter((item) => isWriteoffPhase(item.status)).map((item) => remainingWriteoffAmount(item)))
+}
+function formatWritebackStamp(){
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes())
+}
+function formatWritebackLabel(rec, currency){
+  const amountText = formatAmount(rec.amount, currency)
+  if (rec.style === '發票') {
+    const invoiceNo = (rec.invoiceNo || '').trim() || '-'
+    return '回壓憑證文件 : 發票 ' + invoiceNo + '｜金額 ' + amountText + ' ｜上傳時間 ' + rec.uploadedAt
+  }
+  const fileName = (rec.file && rec.file.name ? rec.file.name : '').trim() || '-'
+  return '回壓憑證文件：其他 ' + fileName + '｜上傳時間 ' + rec.uploadedAt
+}
+function emptyWritebackDraft(){
+  return { invoiceNo:'', invoiceTaxId:'', invoiceDate:'', invoiceFormat:'', amount:'', file:null, error:'', errors:{} }
+}
+function needsWritebackInvoiceTaxId(row){
+  const type = (row.overview && row.overview.type) || row.type
+  if (type !== '廠商預付 / 訂金') return false
+  const vid = row.overview && row.overview.vendor
+  const vendor = VENDORS.find((x) => x.id === vid)
+  const name = vendor ? vendor.name : ''
+  return name === '龍鋒報關有限公司'
+}
+const VOUCHER_PURPOSES = ['進貨款項(PO單)','進口相關費用(LCM)','旅費(國內外出差費用)','廣告費','勞務費(KOL、律師、會計師)','通路費用(通路後扣)','URMART月結廠商','倉庫相關費用','其他費用']
+const PURPOSE_SECOND = {
+  '進貨款項(PO單)': { label:'PO單', kind:'text' },
+  '進口相關費用(LCM)': { label:'報關單號', kind:'text' },
+  '旅費(國內外出差費用)': { label:'出差期間', kind:'dateRange' },
+  '廣告費': { label:'結算月', kind:'month' },
+  '勞務費(KOL、律師、會計師)': { label:'勞務期間', kind:'dateRange' },
+  '通路費用(通路後扣)': { label:'結算月', kind:'month' },
+  'URMART月結廠商': { label:'結算月', kind:'month' },
+  '倉庫相關費用': { label:'結算月', kind:'month' },
+  '其他費用': { label:'使用期間', kind:'dateRange' },
+}
+const STYLES_ALL = ['發票','收據','合約','報價單','勞務報酬單','簽呈(無憑證補貼款項)','差旅費']
+const STYLES_PREPAY = ['合約','報價單']
+const INVOICE_FORMATS = ['21','22','23','25','28']
+const WRITEBACK_INVOICE_TAX_IDS = ['00842283','00757574','80285675','00655979','04406559','16037708','70759575','54395156']
+function voucherStyles(type){ return type === '廠商預付 / 訂金' ? STYLES_PREPAY : STYLES_ALL }
+function roundInt(n){ return Math.round(n) }
+function roundByMode(n, decimal){ return decimal ? roundMoney(n) : roundInt(n) }
+function lineContrib(main, line, amount, decimal){
+  const amt = parseAmount(amount)
+  const round = function(n){ return roundByMode(n, decimal) }
+  const lineTax = main === '未稅' ? '未稅' : line
+  if (main === '未稅') { const pay = round(amt); return { untaxed: pay, pay } }
+  if (lineTax === '未稅') { const u = round(amt); const p = round(amt * 1.05); return { untaxed: u, pay: p } }
+  const p = round(amt); const u = round(amt / 1.05); return { untaxed: u, pay: p }
+}
+function voucherTotals(main, lines, decimal){
+  let u = 0, p = 0
+  lines.forEach((l) => { const c = lineContrib(main, l.taxable, l.amount, decimal); u += c.untaxed; p += c.pay })
+  const round = function(n){ return roundByMode(n, decimal) }
+  u = round(u)
+  p = round(p)
+  return { untaxedAmount: u, taxAmount: round(p - u), payAmount: p }
+}
+function remarkNo(purpose, text, from, to){
+  const meta = PURPOSE_SECOND[purpose]
+  if (meta.kind === 'dateRange') {
+    if (!from && !to) return '-'
+    const a = (from || '').replaceAll('-', '/')
+    const b = (to || '').replaceAll('-', '/')
+    return a && b ? a + ' 至 ' + b : (a || b)
+  }
+  return (text || '').trim() || '-'
+}
+function canAddVoucher(role, status){
+  if (role === '建檔人') return status === '草稿' || status === '審核不通過'
+  return status === '草稿' || status === '審核不通過' || status === '待審核'
+}
+function voucherOps(role, status){
+  if (status === '草稿') return [['view','檢視'],['edit','編輯'],['void','作廢']]
+  if (role === '財務' && (status === '待審核' || status === '審核通過')) return [['view','檢視'],['edit','編輯'],['void','作廢']]
+  return [['view','檢視']]
+}
+function defaultTaxId(row){
+  if (isPettyType(row.type)) return ''
+  const vid = (row.overview && row.overview.vendor) || ''
+  const v = VENDORS.find((x) => x.id === vid)
+  return (v && v.taxId) || '88366693'
+}
+function autoFill(row){
+  const month = (row.overview && row.overview.month) || ''
+  if (row.type === '通路費用 (通路後扣)' && month) return { purpose: '通路費用(通路後扣)', month }
+  if (row.type === 'URMART 月結廠商' && month) return { purpose: 'URMART月結廠商', month }
+  return null
+}
+function emptyDraft(row, existing){
+  if (existing) {
+    return {
+      id: existing.id,
+      purpose: existing.purpose,
+      secondText: existing.secondText,
+      secondFrom: existing.secondFrom,
+      secondTo: existing.secondTo,
+      voucherStyle: existing.voucherStyle,
+      invoiceFormat: existing.invoiceFormat || '',
+      invoiceNo: existing.invoiceNo || '',
+      invoiceDate: existing.invoiceDate || '',
+      vendorTaxId: existing.vendorTaxId,
+      taxable: isForeignCurrency(rowCurrency(row)) ? '未稅' : existing.taxable,
+      lines: existing.lines.map((l) => {
+        const allowDecimal = allowsDecimalAmount(rowCurrency(row))
+        return { id: l.id, name: l.name, taxable: isForeignCurrency(rowCurrency(row)) ? '未稅' : l.taxable, amount: amountInputFromValue(l.amount, allowDecimal) }
+      }),
+      voucherFile: existing.voucherFile,
+      attachments: (existing.attachments || []).slice(),
+      writebacks: (existing.writebacks || []).slice(),
+      error: '',
+      errors: {},
+      status: existing.status,
+    }
+  }
+  const auto = autoFill(row)
+  const purpose = auto ? auto.purpose : '其他費用'
+  const meta = PURPOSE_SECOND[purpose]
+  return {
+    id: 'V-' + Date.now(),
+    purpose,
+    secondText: meta.kind === 'month' && auto ? auto.month : '',
+    secondFrom: '',
+    secondTo: '',
+    voucherStyle: voucherStyles(row.type)[0],
+    invoiceFormat: '',
+    invoiceNo: '',
+    invoiceDate: '',
+    vendorTaxId: defaultTaxId(row),
+    taxable: isForeignCurrency(rowCurrency(row)) ? '未稅' : '應稅',
+    lines: [{ id: 'L-' + Date.now(), name: '', taxable: isForeignCurrency(rowCurrency(row)) ? '未稅' : '應稅', amount: '' }],
+    voucherFile: null,
+    attachments: [],
+    writebacks: [],
+    error: '',
+    errors: {},
+    status: '草稿',
+  }
+}
+function refreshRowTotals(row){
+  row.details = row.vouchers.length
+  row.amount = sumAmounts((row.vouchers || []).map((item) => item.payAmount))
+}
+function loadScript(src){
+  return new Promise((resolve, reject) => {
+    if ([].some.call(document.scripts, (s) => s.src === src)) { resolve(); return }
+    const el = document.createElement('script')
+    el.src = src
+    el.onload = resolve
+    el.onerror = reject
+    document.head.appendChild(el)
+  })
+}
+function formatChtDate(iso){
+  if (!iso) return '　　年　　月　　日'
+  const parts = String(iso).split('-')
+  if (parts.length < 3) return '　　年　　月　　日'
+  return parts[0] + ' 年 ' + Number(parts[1]) + ' 月 ' + Number(parts[2]) + ' 日'
+}
+function mark(checked){ return checked ? '■' : '□' }
+function buildVoucherPdfHtml(row){
+  const ov = row.overview || {}
+  const vendor = (() => {
+    const label = payeeDisplayName(ov.vendor, ov.type || row.type)
+    if (label) return label.replace(/^[A-Za-z0-9]+\s+/, '')
+    return ov.vendorName || ''
+  })()
+  const method = ov.method || ''
+  const fee = ov.fee || ''
+  const details = (row.vouchers || []).filter((item) => item.status === '草稿')
+  const fileBlock = (kind, file) => {
+    if (!file) return `<div class="pdf-fallback">尚未上傳${esc(kind)}</div>`
+    const isImage = file.type && file.type.indexOf('image/') === 0
+    const isPdf = (file.type === 'application/pdf') || /\.pdf$/i.test(file.name || '')
+    if (isPdf) {
+      return `
+      <div class="pdf-file">
+        <div class="pdf-file-title pdf-keep">${esc(kind)}：${esc(file.name)}（以下為上傳 PDF 原頁）</div>
+        <div class="pdf-embed-pdf" data-pdf-url="${esc(file.url)}" data-pdf-name="${esc(file.name)}"></div>
+      </div>`
+    }
+    return `
+      <div class="pdf-file pdf-keep">
+        <div class="pdf-file-title">${esc(kind)}：${esc(file.name)}</div>
+        ${isImage
+          ? `<img src="${esc(file.url)}" alt="${esc(file.name)}">`
+          : `<div class="pdf-fallback">檔案：${esc(file.name)}（非圖片，無法內嵌預覽）</div>`}
+      </div>`
+  }
+  const minRows = 5
+  const body = []
+  let totalUntaxed = 0
+  let totalTax = 0
+  let totalPay = 0
+  const currency = ov.currency || rowCurrency(row)
+  const decimal = allowsDecimalAmount(currency)
+  details.forEach((item) => {
+    const lines = (item.lines && item.lines.length)
+      ? item.lines
+      : [{ name: item.purpose, taxable: item.taxable, amount: item.payAmount }]
+    lines.forEach((line) => {
+      const c = lineContrib(item.taxable, line.taxable, line.amount, decimal)
+      const tax = roundByMode(c.pay - c.untaxed, decimal)
+      const taxFlag = item.taxable === '未稅' ? '未稅' : line.taxable
+      totalUntaxed += c.untaxed
+      totalTax += tax
+      totalPay += c.pay
+      body.push(`
+        <tr>
+          <td>${esc(line.name || '-')}（${taxFlag}）</td>
+          <td class="num">${formatAmount(c.untaxed, currency)}</td>
+          <td class="num">${formatAmount(tax, currency)}</td>
+          <td class="num">${formatAmount(c.pay, currency)}</td>
+        </tr>
+      `)
+    })
+  })
+  while (body.length < minRows) body.push('<tr><td>&nbsp;</td><td class="num"></td><td class="num"></td><td class="num"></td></tr>')
+  body.push(`<tr><td class="total-label">合計</td><td class="num">${details.length ? formatAmount(roundMoney(totalUntaxed), currency) : ''}</td><td class="num">${details.length ? formatAmount(roundMoney(totalTax), currency) : ''}</td><td class="num">${details.length ? formatAmount(roundMoney(totalPay), currency) : ''}</td></tr>`)
+  const attachments = details.map((item, idx) => `
+    <div class="pdf-attach-block">
+      <h3 class="pdf-keep">${idx + 1}. ${esc(item.purpose)}　${esc(item.voucherStyle)}　${esc(item.invoiceNo || '-')}</h3>
+      <div class="pdf-files">
+        ${item.voucherFile ? fileBlock('主憑證', item.voucherFile) : '<div class="pdf-fallback pdf-keep">尚未上傳主憑證</div>'}
+        ${(item.attachments || []).map((file, attIdx) => fileBlock('附件 ' + (attIdx + 1), file)).join('')}
+      </div>
+    </div>
+  `).join('')
+  const payDate = row.expected || ov.expected
+  return `
+    <div class="pdf-root">
+      <style>
+        .pdf-root { width:794px; padding:24px 28px 36px; background:#fff; color:#1f1f1f; font-family:'Microsoft JhengHei','PMingLiU','Noto Sans TC',serif; }
+        .pay-company { text-align:center; font-size:22px; font-weight:700; letter-spacing:2px; }
+        .pay-title { text-align:center; font-size:28px; font-weight:700; letter-spacing:8px; margin:4px 0 10px; }
+        .pay-date { text-align:center; font-size:14px; margin-bottom:16px; }
+        .pay-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .pay-table th, .pay-table td { border:1px solid #000; padding:7px 8px; vertical-align:top; }
+        .pay-table th { font-weight:700; text-align:center; }
+        .pay-table .num { text-align:right; white-space:nowrap; }
+        .pay-table .label { text-align:center; font-weight:700; width:88px; }
+        .pay-table .total-label { text-align:center; font-weight:700; }
+        .pay-meta td { height:42px; }
+        .pay-note { margin-top:8px; }
+        .indent { margin:4px 0 4px 28px; }
+        .cashier { margin-top:6px; color:#c41d7f; }
+        .sign-cell { height:88px; }
+        .pay-footnotes { margin-top:10px; font-size:11px; line-height:1.65; color:#1f1f1f; }
+        .pdf-attachments { margin-top:28px; }
+        .pdf-attachments h2 { margin:0 0 14px; font-size:18px; }
+        .pdf-attach-block { margin-bottom:18px; }
+        .pdf-attach-block h3 { margin:0 0 8px; font-size:13px; font-weight:600; }
+        .pdf-files { display:grid; gap:12px; }
+        .pdf-file-title { margin-bottom:6px; font-size:12px; color:#595959; }
+        .pdf-file img { display:block; max-width:738px; max-height:720px; border:1px solid #e8e8e8; }
+        .pdf-fallback { padding:12px; border:1px dashed #d9d9d9; color:#595959; background:#fff; font-size:12px; }
+      </style>
+      <section class="pay-form">
+        <div class="pay-company">饌元股份有限公司</div>
+        <div class="pay-title">付款申請書</div>
+        <div class="pay-date">${formatChtDate(today())}</div>
+        <table class="pay-table">
+          <thead>
+            <tr>
+              <th style="width:46%">付款內容</th>
+              <th style="width:18%">未稅金額</th>
+              <th style="width:18%">稅額</th>
+              <th style="width:18%">小計</th>
+            </tr>
+          </thead>
+          <tbody>${body.join('')}</tbody>
+        </table>
+        <table class="pay-table pay-meta">
+          <tr>
+            <td class="label">備註</td>
+            <td></td>
+            <td class="label">付款日</td>
+            <td style="width:32%">
+              <div>${mark(Boolean(payDate))} ${formatChtDate(payDate)}</div>
+              <div class="pay-note">${mark(false)} 單據核銷，不需付款</div>
+            </td>
+          </tr>
+          <tr>
+            <td class="label">付款方式</td>
+            <td colspan="3">
+              <div>${mark(method === '匯款')} 匯款（註：員工一律匯款至薪資帳戶）</div>
+              <div class="indent">匯費：${mark(fee === '公司負擔')} 本公司負擔　${mark(fee === '收款人負擔')} 收款人負擔</div>
+              <div>${mark(method === '開立支票')} 開立支票　　${mark(method === '現金')} 零用金（1,000元以下）　　簽收：</div>
+              <div class="cashier">（由出納人員勾選）${mark(false)} 不適用零用金請款，改走一般請款　　出納人員簽章：</div>
+            </td>
+          </tr>
+          <tr><td class="label" colspan="4">廠商／收款人匯款資訊</td></tr>
+          <tr>
+            <td class="label">匯款對象名稱</td>
+            <td colspan="3">
+              ${esc(vendor || '-')}
+              <div class="pay-note">${mark(false)} 非首次匯款　　${mark(false)} 首次匯款，請檢附廠商匯款資料表</div>
+            </td>
+          </tr>
+        </table>
+        <table class="pay-table sign-table">
+          <tr><th>董事長</th><th>總經理</th><th>處級主管</th><th>部級主管</th><th>申請人</th></tr>
+          <tr><td class="sign-cell"></td><td class="sign-cell"></td><td class="sign-cell"></td><td class="sign-cell"></td><td class="sign-cell"></td></tr>
+        </table>
+        <div class="pay-footnotes">
+          <div>〈備註〉</div>
+          <div>1.請款請檢附載有公司抬頭或統一編號之發票或收據及相關單據。2.內容請勿塗改，若有塗改需重新簽核。</div>
+          <div>3.簽核權限：2,000（含）元以下由課級主管核准；2,001~5,000元由部級主管核准；5,001~2,000,000元由總經理核准；2,000,000（含）元以上由董事長核准。</div>
+          <div>〈提醒〉若取得不動產、設備或其使用權超過2,000萬元者，須提經董事會通過後始得為之。</div>
+          <div>4.付款日請依據合約條款填寫，合約內未約定者，以財務部實際作業為主。5.若為第一次往來廠商（收款人），請檢附廠商匯款資料表及存摺封面影本。</div>
+        </div>
+      </section>
+      ${details.length ? `<section class="pdf-attachments"><h2 class="pdf-keep">明細憑證與附件</h2>${attachments}</section>` : ''}
+    </div>
+  `
+}
+async function downloadVoucherPdf(row){
+  const host = document.createElement('div')
+  host.style.cssText = 'position:fixed;left:-10000px;top:0;background:#fff;'
+  host.innerHTML = buildVoucherPdfHtml(row)
+  document.body.appendChild(host)
+  try {
+    await loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js')
+    await loadScript('https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js')
+    await loadScript('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js')
+    const root = host.querySelector('.pdf-root')
+    const images = Array.from(root.querySelectorAll('img'))
+    await Promise.all(images.map((img) => img.complete ? Promise.resolve() : new Promise((resolve) => { img.onload = resolve; img.onerror = resolve })))
+    const PDFDocument = window.PDFLib.PDFDocument
+    const merged = await PDFDocument.create()
+    const failed = []
+    let working = null
+    let cursor = { y: 8 }
+    const margin = 8
+    const createWorking = () => new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageSizeOf = (pdf) => ({
+      pageWidth: pdf.internal.pageSize.getWidth(),
+      pageHeight: pdf.internal.pageSize.getHeight(),
+    })
+    const capture = (el) => window.html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true })
+    const ensureWorking = () => {
+      if (!working) {
+        working = createWorking()
+        cursor = { y: margin }
+      }
+      return working
+    }
+    const flushWorking = async () => {
+      if (!working) return
+      const src = await PDFDocument.load(working.output('arraybuffer'))
+      const pages = await merged.copyPages(src, src.getPageIndices())
+      pages.forEach((page) => merged.addPage(page))
+      working = null
+    }
+    const appendKeep = (canvas, pdf) => {
+      const { pageWidth, pageHeight } = pageSizeOf(pdf)
+      const usableWidth = pageWidth - margin * 2
+      const usableHeight = pageHeight - margin * 2
+      let drawWidth = usableWidth
+      let drawHeight = canvas.height * usableWidth / canvas.width
+      if (drawHeight > usableHeight) {
+        const scale = usableHeight / drawHeight
+        drawHeight = usableHeight
+        drawWidth = usableWidth * scale
+      }
+      const remaining = pageHeight - margin - cursor.y
+      if (cursor.y > margin + 0.5 && drawHeight > remaining) {
+        pdf.addPage()
+        cursor.y = margin
+      }
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, cursor.y, drawWidth, drawHeight)
+      cursor.y += drawHeight + 3
+    }
+    const form = root.querySelector('.pay-form')
+    if (form) {
+      const pdf = ensureWorking()
+      const { pageWidth, pageHeight } = pageSizeOf(pdf)
+      const usableWidth = pageWidth - margin * 2
+      const usableHeight = pageHeight - margin * 2
+      const formCanvas = await capture(form)
+      const imgHeight = formCanvas.height * usableWidth / formCanvas.width
+      let heightLeft = imgHeight
+      let y = margin
+      pdf.addImage(formCanvas.toDataURL('image/png'), 'PNG', margin, y, usableWidth, imgHeight)
+      heightLeft -= usableHeight
+      while (heightLeft > 0) {
+        y = margin - (imgHeight - heightLeft)
+        pdf.addPage()
+        pdf.addImage(formCanvas.toDataURL('image/png'), 'PNG', margin, y, usableWidth, imgHeight)
+        heightLeft -= usableHeight
+      }
+      if (imgHeight <= usableHeight) cursor.y = margin + imgHeight + 3
+      else {
+        const remainder = imgHeight % usableHeight
+        cursor.y = (remainder === 0 ? pageHeight - margin : margin + remainder) + 3
+      }
+    }
+    const nodes = Array.from(root.querySelectorAll('.pdf-keep, .pdf-embed-pdf'))
+    for (const node of nodes) {
+      if (node.classList.contains('pdf-embed-pdf')) {
+        await flushWorking()
+        const url = node.getAttribute('data-pdf-url')
+        const name = node.getAttribute('data-pdf-name') || 'document.pdf'
+        try {
+          const res = await fetch(url)
+          if (!res.ok) throw new Error('fetch')
+          const src = await PDFDocument.load(await res.arrayBuffer(), { ignoreEncryption: true })
+          const pages = await merged.copyPages(src, src.getPageIndices())
+          if (!pages.length) throw new Error('empty')
+          pages.forEach((page) => merged.addPage(page))
+        } catch (e) {
+          failed.push(name)
+        }
+        continue
+      }
+      const canvas = await capture(node)
+      appendKeep(canvas, ensureWorking())
+    }
+    await flushWorking()
+    const bytes = await merged.save()
+    const blob = new Blob([bytes], { type: 'application/pdf' })
+    const href = URL.createObjectURL(blob)
+    const filename = row.no + '_導出文件.pdf'
+    const link = document.createElement('a')
+    link.href = href
+    link.download = filename
+    link.click()
+    if (row.exportedFile && row.exportedFile.url && String(row.exportedFile.url).indexOf('blob:') === 0) {
+      URL.revokeObjectURL(row.exportedFile.url)
+    }
+    row.exportedFile = { name: filename, type: 'application/pdf', url: href }
+    if (failed.length) alert('以下 PDF 無法合併到導出檔，已略過：\n' + failed.join('\n'))
+    return row.exportedFile
+  } finally {
+    host.remove()
+  }
+}
+function fileMeta(file){
+  return { name: file.name, type: file.type, url: URL.createObjectURL(file) }
+}
+function esc(s){
+  return String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')
+}
+function getOps(role, status, type){
+  return getRowOps(role, status, type)
+}
+function opsFor(status, type){ return getRowOps(state.role, status, type) }
+function fuzzyMatch(source, query){
+  const normalize = (value) => value.toLowerCase().replace(/[\s\-_]/g, '')
+  const haystack = normalize(source)
+  const tokens = query.trim().split(/\s+/).map((token) => normalize(token)).filter(Boolean)
+  if (tokens.length === 0) return true
+  return tokens.every((token) => haystack.includes(token))
+}
+
+function setPage(page){
+  state.page = page
+  const names = { list: '一般付款', overview: '新增付款申請', workspace: '付款申請單' }
+  document.getElementById('crumb').textContent = names[page] || '一般付款'
+  document.getElementById('nav-list').classList.toggle('active', page === 'list')
+  render()
+}
+
+function currentRow(){
+  return ROWS.find((r) => r.id === state.currentId)
+}
+
+function formFromRow(row){
+  const o = row.overview || {}
+  const type = o.type || row.type
+  const date = o.date || row.created.slice(0,10)
+  return {
+    type,
+    month: o.month || '',
+    date,
+    vendor: o.vendor || (isPettyType(type) ? findEmployeeForApplicant(row.applicant || 'ruby.lee').id : ''),
+    currency: o.currency || '臺幣TWD',
+    method: o.method || '匯款',
+    fee: o.fee || '公司負擔',
+    expected: o.expected || row.expected || expectedFor(type, date),
+  }
+}
+
+function matchDateQuery(iso, from, to){
+  const hasFrom = Boolean(from)
+  const hasTo = Boolean(to)
+  if (!hasFrom && !hasTo) return true
+  const day = String(iso || '').slice(0, 10)
+  if (!day) return false
+  if (hasFrom && hasTo) {
+    const start = from <= to ? from : to
+    const end = from <= to ? to : from
+    return day >= start && day <= end
+  }
+  return hasFrom ? day === from : day === to
+}
+function rowPayeeId(r){
+  const o = r.overview || {}
+  if (o.vendor) return o.vendor
+  if (isPettyType(r.type)) return findEmployeeForApplicant(r.applicant).id
+  const v = VENDORS[(Number(r.id) - 1) % VENDORS.length] || VENDORS[0]
+  return v.id
+}
+function rowPayeeName(r){
+  const o = r.overview || {}
+  return o.vendorName || payeeDisplayName(rowPayeeId(r), r.type) || '-'
+}
+function calendarIcon(){
+  return `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden><rect x="1.75" y="3" width="12.5" height="11.25" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M1.75 6.25h12.5" stroke="currentColor" stroke-width="1.2"/><path d="M5.25 1.5v3M10.75 1.5v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`
+}
+function padDate(n){ return String(n).padStart(2, '0') }
+function isoDate(y, m, d){ return y + '-' + padDate(m) + '-' + padDate(d) }
+function addMonths(y, m, delta){
+  const date = new Date(y, m - 1 + delta, 1)
+  return { y: date.getFullYear(), m: date.getMonth() + 1 }
+}
+function parseMonth(value){
+  if (!value) {
+    const now = new Date()
+    return { y: now.getFullYear(), m: now.getMonth() + 1 }
+  }
+  const parts = value.split('-').map(Number)
+  return { y: parts[0], m: parts[1] }
+}
+function monthCells(y, m){
+  const startPad = new Date(y, m - 1, 1).getDay()
+  const days = new Date(y, m, 0).getDate()
+  const prev = addMonths(y, m, -1)
+  const prevDays = new Date(prev.y, prev.m, 0).getDate()
+  const next = addMonths(y, m, 1)
+  const cells = []
+  for (let i = startPad - 1; i >= 0; i--) cells.push({ date: isoDate(prev.y, prev.m, prevDays - i), day: prevDays - i, inMonth: false })
+  for (let day = 1; day <= days; day++) cells.push({ date: isoDate(y, m, day), day, inMonth: true })
+  let nextDay = 1
+  while (cells.length < 42) {
+    cells.push({ date: isoDate(next.y, next.m, nextDay), day: nextDay, inMonth: false })
+    nextDay++
+  }
+  return cells
+}
+function renderMonthCal(y, m, from, to, hover, side){
+  const todayStr = today()
+  const end = to || (from && hover ? hover : '')
+  const start = from && end ? (from <= end ? from : end) : ''
+  const stop = from && end ? (from <= end ? end : from) : ''
+  const week = ['日','一','二','三','四','五','六'].map((d) => `<span>${d}</span>`).join('')
+  const days = monthCells(y, m).map((cell) => {
+    const isEdge = cell.date === from || (to && cell.date === to)
+    const inRange = start && stop && cell.date > start && cell.date < stop
+    const cls = [
+      'date-cal-day',
+      cell.inMonth ? '' : ' is-muted',
+      isEdge ? ' is-edge' : '',
+      inRange ? ' is-in-range' : '',
+      cell.date === todayStr && !isEdge ? ' is-today' : '',
+      hover === cell.date ? ' is-hover' : '',
+    ].join('')
+    return `<button type="button" class="${cls}" data-date-pick="${cell.date}">${cell.day}</button>`
+  }).join('')
+  const leftNav = side === 'left'
+    ? `<div class="date-cal-nav"><button type="button" data-date-nav="-12">«</button><button type="button" data-date-nav="-1">‹</button></div>`
+    : `<span class="date-cal-nav-spacer"></span>`
+  const rightNav = side === 'right'
+    ? `<div class="date-cal-nav"><button type="button" data-date-nav="1">›</button><button type="button" data-date-nav="12">»</button></div>`
+    : `<span class="date-cal-nav-spacer"></span>`
+  return `<div class="date-cal">
+    <div class="date-cal-head">${leftNav}<span class="date-cal-title">${y}年 ${m}月</span>${rightNav}</div>
+    <div class="date-cal-week">${week}</div>
+    <div class="date-cal-grid">${days}</div>
+  </div>`
+}
+function renderDateModeField(label, key, f){
+  const from = f[key + 'From'] || ''
+  const to = f[key + 'To'] || ''
+  const picker = state.datePicker
+  const open = picker && picker.key === key
+  const view = open ? { y: picker.viewY, m: picker.viewM } : parseMonth(from)
+  const right = addMonths(view.y, view.m, 1)
+  const hover = open ? (picker.hover || '') : ''
+  return `<div class="date-mode-field" id="date-picker-${key}">
+    <span>${label}</span>
+    <button type="button" class="date-range-picker${open ? ' open' : ''}" data-date-open="${key}">
+      <span class="${from ? 'date-range-value' : 'date-range-placeholder'}">${from || '開始日期'}</span>
+      <span class="date-range-arrow">→</span>
+      <span class="${to ? 'date-range-value' : 'date-range-placeholder'}">${to || '結束日期'}</span>
+      <span class="date-range-icon">${calendarIcon()}</span>
+    </button>
+    ${open ? `<div class="date-range-panel" data-date-panel="${key}">
+      ${renderMonthCal(view.y, view.m, from, to, hover, 'left')}
+      ${renderMonthCal(right.y, right.m, from, to, hover, 'right')}
+    </div>` : ''}
+  </div>`
+}
+function renderFilterPayee(f){
+  const items = f.payeeKind === 'employee' ? payeeList('個人代墊報支') : payeeList('廠商實報實銷')
+  const selected = items.find((item) => item.id === f.payeeId)
+  const placeholder = f.payeeKind === 'employee' ? '搜尋或選擇員工' : '搜尋或選擇廠商'
+  const searchPh = f.payeeKind === 'employee' ? '搜尋姓名、帳號或編號' : '搜尋編號或名稱'
+  const emptyText = f.payeeKind === 'employee' ? '查無員工' : '查無廠商'
+  const keyword = state.filterPayeeKeyword || ''
+  const filtered = items.filter((item) => fuzzyMatch(item.search, keyword))
+  const listHtml = `<li><button type="button" class="vendor-option${!f.payeeId?' selected':''}" data-f-payee="">不限</button></li>` + (
+    filtered.length
+      ? filtered.map((item) => `<li><button type="button" class="vendor-option${item.id===f.payeeId?' selected':''}" data-f-payee="${item.id}"><span class="vendor-code">${esc(item.code)}</span><span>${esc(item.name)}</span></button></li>`).join('')
+      : `<li class="vendor-empty">${emptyText}</li>`
+  )
+  return `<div class="filter-payee">
+    <span>付款對象</span>
+    <div class="payee-kind-radios">
+      <input type="radio" name="f-payee-kind" value="" ${!f.payeeKind?'checked':''} style="display:none" aria-hidden="true">
+      <label><input type="radio" name="f-payee-kind" value="vendor" ${f.payeeKind==='vendor'?'checked':''}> 廠商</label>
+      <label><input type="radio" name="f-payee-kind" value="employee" ${f.payeeKind==='employee'?'checked':''}> 員工</label>
+    </div>
+    ${f.payeeKind ? `
+    <div class="vendor-select" id="f-payee-wrap">
+      <input type="hidden" id="f-payee-id" value="${esc(f.payeeId || '')}">
+      <button type="button" class="vendor-trigger${state.filterPayeeOpen ? ' open' : ''}" id="f-payee-trigger">
+        <span class="${selected ? 'vendor-value' : 'vendor-placeholder'}">${selected ? esc(selected.code + ' ' + selected.name) : placeholder}</span>
+        <span class="vendor-caret">▾</span>
+      </button>
+      ${state.filterPayeeOpen ? `<div class="vendor-dropdown" id="f-payee-drop">
+        <input class="vendor-search" id="f-payee-search" placeholder="${searchPh}" value="${esc(keyword)}">
+        <ul class="vendor-list">${listHtml}</ul>
+      </div>` : ''}
+    </div>` : ''}
+  </div>`
+}
+
+function renderList(){
+  const f = state.filters
+  const rows = ROWS.filter(r => {
+    if (f.no && !fuzzyMatch(r.no, f.no)) return false
+    if (f.type && r.type !== f.type) return false
+    if (f.status && r.status !== f.status) return false
+    if (f.applicant && !r.applicant.includes(f.applicant.trim())) return false
+    if (f.payeeId && rowPayeeId(r) !== f.payeeId) return false
+    if (!matchDateQuery(r.created, f.createdFrom, f.createdTo)) return false
+    if (!matchDateQuery(r.expected, f.expectedFrom, f.expectedTo)) return false
+    if (!matchDateQuery(r.actual, f.actualFrom, f.actualTo)) return false
+    return true
+  })
+  return `
+    <div class="page-header">
+      <h1>一般付款</h1>
+      <button class="btn btn-primary" id="btn-new">新增付款申請</button>
+    </div>
+    <section class="filter-card">
+      <div class="filter-grid">
+        <label>申請單號<input id="f-no" value="${f.no}" placeholder="模糊查詢，例如 24001"><span class="field-hint">輸入部分單號即可，支援即時模糊查詢</span></label>
+        <label>申請款項類型
+          <select id="f-type"><option value="">請選擇</option>${TYPES.map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('')}</select>
+        </label>
+        <label>狀態
+          <select id="f-status"><option value="">請選擇</option>${STATUSES.map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('')}</select>
+        </label>
+        <label>申請人<input id="f-applicant" value="${f.applicant}" placeholder="模糊查詢"></label>
+        ${renderFilterPayee(f)}
+        ${renderDateModeField('建立日', 'created', f)}
+        ${renderDateModeField('預計付款日', 'expected', f)}
+        ${renderDateModeField('實際付款日', 'actual', f)}
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-default" id="btn-reset">重置</button>
+        <button class="btn btn-primary" id="btn-search">查詢</button>
+      </div>
+    </section>
+    ${state.notice ? `<div class="notice">${state.notice}</div>` : ''}
+    <div class="result-meta">共 ${rows.length} 筆</div>
+    <div class="table-card"><div class="table-scroll"><table>
+      <thead><tr>
+        <th>申請單號</th><th>申請款項類型</th><th>付款對象</th><th>總金額</th>
+        <th>建立時間</th><th>預計付款日</th><th>實際付款日</th><th>不通過原因</th><th>狀態</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td class="mono">${r.no}</td>
+            <td>${r.type}</td>
+            <td>${esc(rowPayeeName(r))}</td>
+            <td class="num">${money(r.amount, rowCurrency(r))}</td>
+            <td>${r.created}</td>
+            <td>${dash(r.expected)}</td>
+            <td>${dash(r.actual)}</td>
+            <td>${reasonCell(r.reason)}</td>
+            <td><span class="status status-${r.status}">${r.status}</span></td>
+            <td><div class="ops">${opsFor(r.status, r.type).map(([k,l,off]) => `<button class="btn-link ${k==='void'?'danger':''}" data-act="${k}" data-id="${r.id}" ${off?'disabled':''}>${l}</button>`).join('')}</div></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table></div></div>
+    ${state.payOpen ? renderPayRateModal() : ''}
+    ${state.auditOpen ? renderAuditFileModal() : ''}
+  `
+}
+
+function renderAuditFileModal(){
+  const row = ROWS.find((r) => r.id === state.auditTargetId)
+  const file = row && row.exportedFile
+  const body = file
+    ? `<article class="file-preview"><div class="file-preview-tag">導出文件</div><div><div class="file-names">${esc(file.name)}</div><iframe class="file-preview-pdf" title="${esc(file.name)}" src="${esc(file.url)}"></iframe></div></article>`
+    : '<p class="placeholder-note">尚無導出檔案。請先於明細頁導出文件；重新整理後本次暫存檔會消失。</p>'
+  return `<div class="modal-mask" id="audit-file-mask"><div class="modal-card" id="audit-file-card" style="width:min(860px,100%)">
+    <div class="modal-head"><h2>檢視審核檔案</h2><button type="button" class="modal-close" id="audit-file-close">×</button></div>
+    <div class="view-files-body">${body}</div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-default" id="audit-file-cancel">關閉</button>
+      <button type="button" class="btn btn-primary" id="audit-file-download" ${file ? '' : 'disabled'}>下載</button>
+    </div>
+  </div></div>`
+}
+
+function renderPayRateModal(){
+  const row = ROWS.find((r) => r.id === state.payTargetId)
+  const currency = row ? rowCurrency(row) : ''
+  const needRate = row ? isForeignCurrency(rowCurrency(row)) : false
+  const payDate = state.payDate || today()
+  return `<div class="modal-mask" id="pay-rate-mask"><div class="modal-card modal-card-sm" id="pay-rate-card">
+    <div class="modal-head"><h2>完成付款</h2><button type="button" class="modal-close" id="pay-rate-close">×</button></div>
+    <div class="modal-row"><span class="required">實際付款日</span><div class="modal-field">
+      <input id="pay-date" type="date" class="${state.payDateError ? 'error' : ''}" value="${esc(payDate)}">
+      <p class="field-hint">預設為今日，可依實際付款日調整。</p>
+      ${state.payDateError ? `<p class="field-error">${esc(state.payDateError)}</p>` : ''}
+    </div></div>
+    ${needRate ? `<div class="modal-row"><span class="required">付款匯率</span><div class="modal-field">
+      <input id="pay-rate" inputmode="decimal" placeholder="請填入付款匯率" class="${state.payError ? 'error' : ''}" value="${esc(state.payRate)}">
+      ${currency ? `<p class="field-hint">付款幣別：${esc(currency)}</p>` : ''}
+      ${state.payError ? `<p class="field-error">${esc(state.payError)}</p>` : ''}
+    </div></div>` : ''}
+    <div class="modal-foot">
+      <button type="button" class="btn btn-default" id="pay-rate-cancel">取消</button>
+      <button type="button" class="btn btn-primary" id="pay-rate-ok">確認</button>
+    </div>
+  </div></div>`
+}
+
+function completePay(row, options){
+  const actual = (options && options.actualPaymentDate) || today()
+  const exchangeRate = options && options.exchangeRate
+  row.actual = actual
+  row.status = needsWriteoff(row.type) ? '待核銷' : '已完成'
+  if (exchangeRate != null) row.exchangeRate = exchangeRate
+  const nextStatus = needsWriteoff(row.type) ? '待核銷' : '已完成'
+  row.vouchers.forEach((item) => {
+    if (item.status === '審核通過') {
+      item.status = nextStatus
+      if (!item.writebacks) item.writebacks = []
+    }
+  })
+  state.payOpen = false
+  state.payTargetId = ''
+  state.payRate = ''
+  state.payDate = ''
+  state.payDateError = ''
+  state.payError = ''
+  state.notice = needsWriteoff(row.type)
+    ? row.no + ' 已完成付款。此單為事後核銷，核銷歷史頁籤已出現（建檔人／財務均可看見）。'
+    : row.no + '：已完成付款'
+}
+
+function nextThursday(iso){
+  const d = new Date(iso + 'T00:00:00')
+  const sun = new Date(d); sun.setDate(d.getDate() - d.getDay())
+  const thu = new Date(sun); thu.setDate(sun.getDate() + 11)
+  return thu.toISOString().slice(0,10)
+}
+function generalPay(iso){
+  const d = new Date(iso + 'T00:00:00')
+  const day = d.getDate(), y = d.getFullYear(), m = d.getMonth()
+  if (day >= 21) return new Date(y, m+1, 15).toISOString().slice(0,10)
+  if (day <= 5) return new Date(y, m, 15).toISOString().slice(0,10)
+  const last = new Date(y, m+1, 0).getDate()
+  return new Date(y, m, Math.min(30,last)).toISOString().slice(0,10)
+}
+function expectedFor(type, date){
+  const meta = META[type]
+  if (meta.petty) return nextThursday(date)
+  if (meta.prepay) return date
+  return generalPay(date)
+}
+
+function renderPayeeField(f, locked){
+  const items = payeeList(f.type)
+  const selected = items.find((item) => item.id === f.vendor)
+  const placeholder = isPettyType(f.type) ? '搜尋或選擇員工' : '搜尋或選擇付款對象（資料來自廠商列表）'
+  const searchPh = isPettyType(f.type) ? '搜尋姓名、帳號或編號' : '搜尋編號或名稱'
+  const emptyText = isPettyType(f.type) ? '查無員工' : '查無付款對象'
+  const keyword = state.payeeKeyword || ''
+  const filtered = items.filter((item) => fuzzyMatch(item.search, keyword))
+  const listHtml = filtered.length
+    ? filtered.map((item) => `<li><button type="button" class="vendor-option${item.id===f.vendor?' selected':''}" data-payee="${item.id}"><span class="vendor-code">${esc(item.code)}</span><span>${esc(item.name)}</span></button></li>`).join('')
+    : `<li class="vendor-empty">${emptyText}</li>`
+  return `
+    <div class="vendor-select${state.submitted && !f.vendor ? ' has-error' : ''}${locked ? ' is-disabled' : ''}" id="payee-wrap">
+      <input type="hidden" id="o-vendor" value="${esc(f.vendor || '')}">
+      <button type="button" class="vendor-trigger${state.payeeOpen ? ' open' : ''}" id="payee-trigger" ${locked ? 'disabled' : ''}>
+        <span class="${selected ? 'vendor-value' : 'vendor-placeholder'}">${selected ? esc(selected.code + ' ' + selected.name) : placeholder}</span>
+        <span class="vendor-caret">▾</span>
+      </button>
+      ${!locked && state.payeeOpen ? `
+      <div class="vendor-dropdown" id="payee-drop">
+        <input class="vendor-search" id="payee-search" placeholder="${searchPh}" value="${esc(keyword)}">
+        <ul class="vendor-list">${listHtml}</ul>
+      </div>` : ''}
+    </div>
+  `
+}
+
+function renderOverview(){
+  const f = state.form
+  const meta = META[f.type]
+  const methods = f.type === '個人代墊報支' ? ['匯款'] : ['匯款','開立支票','現金']
+  const isWorkspace = state.page === 'workspace'
+  const row = isWorkspace ? currentRow() : null
+  const locked = Boolean(isWorkspace && row && !canEdit(state.role, row.status))
+  const dis = locked ? 'disabled' : ''
+  const submitLabel = isWorkspace ? '儲存' : '建立'
+  return `
+    <form id="overview-form" class="overview-page">
+      <div class="page-header">
+        <h1>付款總覽</h1>
+        ${locked ? '' : `<button class="btn btn-primary" type="submit">${submitLabel}</button>`}
+      </div>
+      ${state.saved ? '<div class="save-ok">已儲存</div>' : ''}
+      <div class="overview-card">
+        <div class="form-row">
+          <label class="form-label required">付款類型</label>
+          <div class="form-control">
+            <select id="o-type" ${dis}>${TYPES.map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('')}</select>
+            <div class="info-box"><div class="info-box-title">${meta.title}</div><div class="info-box-desc">${meta.desc}</div></div>
+          </div>
+        </div>
+        ${meta.settlement ? `
+        <div class="form-row">
+          <label class="form-label required">結算月</label>
+          <div class="form-control">
+            <input id="o-month" type="month" value="${f.month}" ${dis} class="${state.submitted && !f.month ? 'error' : ''}">
+            <p class="field-hint">設定後，新增明細將自動帶入款項用途以及結算月。</p>
+            ${state.submitted && !f.month ? '<p class="field-error">此欄位為必填</p>' : ''}
+          </div>
+        </div>` : ''}
+        <div class="form-row"><label class="form-label required">申請人</label><div class="form-control"><input value="${isWorkspace && row ? row.applicant : 'ruby.lee'}" disabled></div></div>
+        <div class="form-row">
+          <label class="form-label required">申請日</label>
+          <div class="form-control">
+            <input id="o-date" type="date" value="${f.date}" ${dis}>
+            <p class="field-hint">作為預計付款日計算基準；預設為今日，可依實際申請日調整。</p>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label required">付款對象</label>
+          <div class="form-control">
+            ${renderPayeeField(f, locked)}
+            ${isPettyType(f.type) ? '<p class="field-hint">付款類型為「個人代墊報支」時，付款對象為公司員工；預設帶入申請人，可改選。</p>' : ''}
+            ${state.submitted && !f.vendor ? '<p class="field-error">此欄位為必填</p>' : ''}
+          </div>
+        </div>
+        <div class="form-row"><label class="form-label required">付款幣別</label><div class="form-control">
+          <select id="o-currency" ${dis}>${['臺幣TWD','美元USD','英镑GBP','澳元AUD','人民幣CNY','歐元EUR','港幣HK'].map(c=>`<option ${f.currency===c?'selected':''}>${c}</option>`).join('')}</select>
+        </div></div>
+        <div class="form-row"><label class="form-label required">付款方式</label><div class="form-control">
+          <select id="o-method" ${dis}>${methods.map(m=>`<option ${f.method===m?'selected':''}>${m}</option>`).join('')}</select>
+          ${f.type==='個人代墊報支' ? '<p class="field-hint">付款類型為「個人代墊報支」時，付款方式僅可選擇匯款。</p>' : ''}
+        </div></div>
+        <div class="form-row"><label class="form-label required">匯款手續費</label><div class="form-control">
+          <select id="o-fee" ${dis}>${['公司負擔','收款人負擔'].map(o=>`<option ${f.fee===o?'selected':''}>${o}</option>`).join('')}</select>
+        </div></div>
+        <div class="form-row"><label class="form-label">總付款金額（含稅）</label><div class="form-control">
+          <input disabled value="${row ? formatAmount(sumAmounts((row.vouchers || []).map((item) => item.payAmount)), rowCurrency(row)) : 0}">
+        </div></div>
+        <div class="form-row"><label class="form-label required">預計付款日</label><div class="form-control">
+          <input id="o-expected" type="date" value="${f.expected}" ${locked || !meta.prepay ? 'disabled' : ''}>
+          <div class="info-box">
+            <div class="info-box-title">預計付款日（需依付款類型限制）</div>
+            <ul class="rule-list">
+              <li><strong>一般付款：</strong>每月21日~次月5日（含）之申請，付款日為次月15日；每月6日~20日（含）之申請，付款日為當月30日。</li>
+              <li><strong>零用金：</strong>下一個週四（申請日若為週四，則為下週四）。</li>
+              <li><strong>預付款：</strong>須在申請日起 5 日內（含）。</li>
+            </ul>
+            <div class="rule-footer">${meta.petty ? '目前類別「零用金」：自動帶入下週四。' : meta.prepay ? '目前類別「預付款」：預設申請日，可於 5 日內調整。' : '目前類別依一般付款截止規則自動帶入。'}</div>
+          </div>
+        </div></div>
+      </div>
+    </form>
+  `
+}
+function renderDetailsTab(row){
+  const parentLocked = row.status === '已作廢' || row.status === '已完成'
+  const canAdd = canAddVoucher(state.role, row.status) && !parentLocked
+  const hasDraft = row.vouchers.some((item) => item.status === '草稿')
+  const canReview = state.role === '財務' && row.status === '待審核'
+  const hasAnyDetail = row.vouchers.length > 0
+  const canExport = hasAnyDetail && !parentLocked && (hasDraft || Boolean(row.exportedFile))
+  const showRate = isForeignCurrency(rowCurrency(row))
+  const colCount = showRate ? 15 : 14
+  const rowsHtml = row.vouchers.length === 0
+    ? `<tr><td colspan="${colCount}" class="empty-cell">尚無已保存之憑證明細</td></tr>`
+    : row.vouchers.map((item, idx) => {
+        const ops = (parentLocked ? [['view','檢視']] : voucherOps(state.role, item.status)).map(([k,l]) => `<button type="button" data-vop="${k}" data-vid="${item.id}">${l}</button>`).join('')
+        return `<tr>
+          <td>${idx + 1}</td>
+          <td>${item.vendorTaxId}</td>
+          <td>${item.purpose}</td>
+          <td>${item.remarkNo}</td>
+          <td>${item.voucherStyle}</td>
+          <td>${item.invoiceFormat || '-'}</td>
+          <td>${item.invoiceNo || '-'}</td>
+          <td>${item.invoiceDate ? item.invoiceDate.replaceAll('-', '/') : '-'}</td>
+          <td>${item.taxable}</td>
+          <td class="num">${formatAmount(item.untaxedAmount, rowCurrency(row))}</td>
+          <td class="num">${formatAmount(item.taxAmount, rowCurrency(row))}</td>
+          ${showRate ? `<td class="num">${formatExchangeRate(row.exchangeRate)}</td>` : ''}
+          <td class="num">${formatAmount(item.payAmount, rowCurrency(row))}</td>
+          <td><span class="status status-${item.status}">${item.status}</span></td>
+          <td><div class="details-ops">${ops}</div></td>
+        </tr>`
+      }).join('')
+  return `
+    <div class="details-panel">
+      <div class="details-toolbar">
+        <div class="details-meta">總共 ${row.vouchers.length} 筆，每頁顯示 <select><option>10</option><option selected>20</option><option>50</option></select> 筆</div>
+        <div class="details-actions">
+          <button type="button" class="btn btn-primary" id="btn-add-detail" ${canAdd ? '' : 'disabled'}>+ 新增明細</button>
+          <button type="button" class="btn btn-default" id="btn-export" ${canExport ? '' : 'disabled'}>導出文件</button>
+          <button type="button" class="${canReview ? 'btn btn-primary' : 'btn btn-disabled'}" id="btn-approve" ${canReview ? '' : 'disabled'}>審核通過</button>
+          <button type="button" class="${canReview ? 'btn btn-default' : 'btn btn-disabled'}" id="btn-reject" ${canReview ? '' : 'disabled'}>審核不通過</button>
+        </div>
+      </div>
+      <div class="details-table-wrap"><table class="details-table">
+        <thead><tr>
+          <th>ID</th><th>廠商統編</th><th>款項用途</th><th>備註單號</th><th>憑證樣式</th>
+          <th>發票格式</th><th>發票號碼(憑證號碼)</th><th>發票日期</th><th>應稅 / 未稅</th>
+          <th>未稅金額</th><th>稅額</th>${showRate ? '<th>付款匯率</th>' : ''}<th>付款金額</th><th>狀態</th><th>操作</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table></div>
+      <p class="details-foot">請點「+ 新增明細」以列出憑證明細。本表僅顯示已保存之憑證。首次導出會下載該批草稿明細 PDF，並將草稿改為待審核；之後可重複下載同一份檔案且狀態不變。母單已完成後僅可檢視。</p>
+    </div>
+    ${state.modalMode === 'view' ? renderViewModal() : ''}
+    ${state.modalMode === 'add' || state.modalMode === 'edit' ? renderDraftModal(row) : ''}
+    ${state.rejectOpen ? renderRejectModal() : ''}
+`
+}
+function renderRejectModal(){
+  return `<div class="modal-mask" id="reject-mask"><div class="modal-card modal-card-sm" id="reject-card">
+    <div class="modal-head"><h2>審核不通過</h2><button type="button" class="modal-close" id="reject-close">×</button></div>
+    <div class="modal-row"><span class="required">不通過原因</span><div class="modal-field">
+      <textarea id="reject-reason" class="${state.rejectError ? 'error' : ''}" rows="4" placeholder="請輸入不通過原因">${esc(state.rejectReason)}</textarea>
+      ${state.rejectError ? `<p class="field-error">${esc(state.rejectError)}</p>` : ''}
+    </div></div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-default" id="reject-cancel">取消</button>
+      <button type="button" class="btn btn-primary" id="btn-reject-ok">確認</button>
+    </div>
+  </div></div>`
+}
+function filePreviewHtml(file, label){
+  if (!file) return ''
+  const isImage = file.type && file.type.indexOf('image/') === 0
+  const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '')
+  const body = isImage
+    ? `<img src="${esc(file.url)}" alt="${esc(file.name)}">`
+    : isPdf
+      ? `<iframe class="file-preview-pdf" title="${esc(file.name)}" src="${esc(file.url)}"></iframe>`
+      : `<a href="${esc(file.url)}" target="_blank">${esc(file.name)}</a>`
+  return `<article class="file-preview"><div class="file-preview-tag">${label}</div>${body}</article>`
+}
+function renderViewModal(){
+  const item = state.viewing
+  if (!item) return ''
+  const main = item.voucherFile
+    ? filePreviewHtml(item.voucherFile, '主憑證')
+    : '<p class="placeholder-note">尚未上傳主憑證</p>'
+  const atts = (item.attachments || []).map((file, i) => filePreviewHtml(file, '附件 ' + (i + 1))).join('')
+  return `<div class="modal-mask" id="detail-mask"><div class="modal-card">
+    <div class="modal-head"><h2>檢視憑證</h2><button type="button" class="modal-close" id="modal-close">×</button></div>
+    <div class="view-files-body">${main}${atts}</div>
+    <div class="modal-foot"><button type="button" class="btn btn-default" id="modal-cancel">關閉</button></div>
+  </div></div>`
+}
+function errText(errors, key){
+  return errors && errors[key] ? `<p class="field-error">${esc(errors[key])}</p>` : ''
+}
+function errCls(errors, key){
+  return errors && errors[key] ? ' error' : ''
+}
+function renderDraftModal(row){
+  const d = state.draft
+  const errors = d.errors || {}
+  const second = PURPOSE_SECOND[d.purpose]
+  const styles = voucherStyles(row.type)
+  const taxLockedByCurrency = isForeignCurrency(rowCurrency(row))
+  const allowDecimal = allowsDecimalAmount(rowCurrency(row))
+  const effectiveTax = taxLockedByCurrency ? '未稅' : d.taxable
+  const locked = effectiveTax === '未稅'
+  const tot = voucherTotals(effectiveTax, d.lines, allowDecimal)
+  const auto = autoFill(row)
+  const secondField = second.kind === 'dateRange'
+    ? `<div class="date-range"><input id="d-from" type="date" class="${!d.secondFrom && errors.second ? 'error' : ''}" value="${d.secondFrom}"${d.secondTo ? ` max="${d.secondTo}"` : ''}><span>至</span><input id="d-to" type="date" class="${!d.secondTo && errors.second ? 'error' : ''}" value="${d.secondTo}"${d.secondFrom ? ` min="${d.secondFrom}"` : ''}></div>`
+    : `<input id="d-second" class="${errCls(errors,'second')}" type="${second.kind==='month'?'month':'text'}" placeholder="請輸入${second.label}" value="${esc(d.secondText)}">`
+  const invoice = d.voucherStyle === '發票'
+    ? `<div class="modal-row"><span class="required">發票格式</span><div class="modal-field"><select id="d-invfmt" class="${errCls(errors,'invoiceFormat')}"><option value="">請選擇</option>${INVOICE_FORMATS.map((x)=>`<option ${d.invoiceFormat===x?'selected':''}>${x}</option>`).join('')}</select>${errText(errors,'invoiceFormat')}</div></div>`
+    : ''
+  const lines = d.lines.map((line, i) => `
+    <div class="line-row">
+      <div class="line-cell">
+        <input class="d-line-name${errCls(errors,'lineName-'+i)}" data-i="${i}" maxlength="50" placeholder="請輸入明細細項" value="${esc(line.name)}">
+        ${errText(errors,'lineName-'+i)}
+      </div>
+      <select class="d-line-tax" data-i="${i}" ${locked ? 'disabled' : ''}><option ${!locked && line.taxable==='應稅'?'selected':''}>應稅</option><option ${locked || line.taxable==='未稅'?'selected':''}>未稅</option></select>
+      <div class="line-cell">
+        <input class="d-line-amt${errCls(errors,'lineAmount-'+i)}" data-i="${i}" inputmode="${allowDecimal ? 'decimal' : 'numeric'}" ${allowDecimal ? '' : 'pattern="[0-9]*"'} placeholder="${allowDecimal ? '可至小數第三位' : '請輸入金額'}" value="${esc(line.amount)}">
+        ${errText(errors,'lineAmount-'+i)}
+      </div>
+      <div class="line-ops">
+        ${d.lines.length > 1 ? `<button type="button" class="minus-btn" data-del="${i}">−</button>` : ''}
+        ${i === d.lines.length - 1 ? `<button type="button" class="plus-btn" id="btn-add-line">+</button>` : ''}
+      </div>
+    </div>
+  `).join('')
+  return `<div class="modal-mask" id="detail-mask"><div class="modal-card" id="draft-card">
+    <div class="modal-head"><h2>${state.modalMode==='edit'?'編輯明細':'新增明細'}</h2><button type="button" class="modal-close" id="modal-close">×</button></div>
+    <label class="modal-row"><span class="required">款項用途</span><select id="d-purpose">${VOUCHER_PURPOSES.map((p)=>`<option ${d.purpose===p?'selected':''}>${p}</option>`).join('')}</select></label>
+    <div class="modal-row"><span class="required">${second.label}</span><div class="modal-field">${secondField}${errText(errors,'second')}</div></div>
+    <label class="modal-row"><span class="required">憑證樣式</span><select id="d-style">${styles.map((s)=>`<option ${d.voucherStyle===s?'selected':''}>${s}</option>`).join('')}</select></label>
+    ${invoice}
+    <div class="modal-row"><span class="required">發票號碼(憑證號碼)</span><div class="modal-field"><input id="d-invno" class="${errCls(errors,'invoiceNo')}" placeholder="請輸入憑證號碼" value="${esc(d.invoiceNo)}">${errText(errors,'invoiceNo')}</div></div>
+    ${d.voucherStyle === '發票' ? `<div class="modal-row"><span class="required">發票日期</span><div class="modal-field"><input id="d-invdate" class="${errCls(errors,'invoiceDate')}" type="date" value="${esc(d.invoiceDate)}">${errText(errors,'invoiceDate')}</div></div>` : ''}
+    <div class="modal-row"><span class="required">廠商統編</span><div class="modal-field"><input id="d-taxid" class="${errCls(errors,'vendorTaxId')}" maxlength="8" value="${esc(d.vendorTaxId)}">${errText(errors,'vendorTaxId')}</div></div>
+    <div class="modal-row"><span class="required">是否應稅</span><div class="modal-field"><select id="d-tax" ${taxLockedByCurrency ? 'disabled' : ''}><option ${effectiveTax==='應稅'?'selected':''}>應稅</option><option ${effectiveTax==='未稅'?'selected':''}>未稅</option></select>${taxLockedByCurrency ? '<p class="field-hint">外幣付款僅能設定未稅。</p>' : ''}</div></div>
+    <div class="sub-title">明細細項</div>
+    <div class="line-head"><span class="required">明細細項</span><span class="required">是否應稅</span><span class="required">金額</span><span></span></div>
+    ${lines}
+    <label class="modal-row"><span>未稅金額</span><input readonly value="${formatAmount(tot.untaxedAmount, rowCurrency(row))}"></label>
+    <label class="modal-row"><span>稅額</span><input readonly value="${formatAmount(tot.taxAmount, rowCurrency(row))}"></label>
+    <label class="modal-row"><span>付款金額</span><input readonly value="${formatAmount(tot.payAmount, rowCurrency(row))}"></label>
+    <div class="file-block"><label class="required">上傳憑證檔案</label><input id="d-file" type="file">${d.voucherFile ? `<div class="file-names">${d.voucherFile.name}</div>` : ''}${errText(errors,'voucherFile')}</div>
+    <div class="file-block"><label>附件（ 選填，可上傳多個檔案 ）</label><input id="d-atts" type="file" multiple>${d.attachments.length ? `<div class="file-names">${d.attachments.map(f=>f.name).join('、')}</div>` : ''}</div>
+    ${auto ? '<p class="placeholder-note">此單已設定結算月，新增明細會帶入對應款項用途與結算月。</p>' : ''}
+    <div class="modal-foot">
+      <button type="button" class="btn btn-default" id="modal-cancel">取消</button>
+      <button type="button" class="btn btn-primary" id="modal-ok">確定</button>
+    </div>
+  </div></div>`
+}
+function syncDraftFromDom(){
+  const d = state.draft
+  if (!d) return
+  const purpose = document.getElementById('d-purpose')
+  if (purpose) d.purpose = purpose.value
+  const second = document.getElementById('d-second')
+  if (second) d.secondText = second.value
+  const from = document.getElementById('d-from')
+  if (from) d.secondFrom = from.value
+  const to = document.getElementById('d-to')
+  if (to) d.secondTo = to.value
+  const style = document.getElementById('d-style')
+  if (style) d.voucherStyle = style.value
+  const invfmt = document.getElementById('d-invfmt')
+  d.invoiceFormat = invfmt ? invfmt.value : ''
+  const invno = document.getElementById('d-invno')
+  if (invno) d.invoiceNo = invno.value
+  const invdate = document.getElementById('d-invdate')
+  if (invdate) d.invoiceDate = invdate.value
+  const taxid = document.getElementById('d-taxid')
+  if (taxid) d.vendorTaxId = taxid.value.replace(/\D/g, '').slice(0, 8)
+  const tax = document.getElementById('d-tax')
+  if (tax) d.taxable = tax.disabled ? '未稅' : tax.value
+  document.querySelectorAll('.d-line-name').forEach((el) => { d.lines[el.dataset.i].name = el.value.slice(0, 50) })
+  document.querySelectorAll('.d-line-tax').forEach((el) => { d.lines[el.dataset.i].taxable = el.value })
+  document.querySelectorAll('.d-line-amt').forEach((el) => { d.lines[el.dataset.i].amount = sanitizeAmountInput(el.value, allowsDecimalAmount(rowCurrency(currentRow()))) })
+}
+function closeDetailModal(){
+  state.modalMode = ''
+  state.draft = null
+  state.viewing = null
+  state.editingId = ''
+  render()
+}
+
+function renderWriteoffTab(row){
+  const source = (row.vouchers || []).filter((item) => isWriteoffPhase(item.status))
+  const currency = rowCurrency(row)
+  const remaining = parentUnwrittenRemaining(row.vouchers)
+  const paidTotal = row.amount || remaining
+  const canWriteback = state.role === '建檔人' && (row.status === '待核銷' || row.status === '部分核銷')
+  const draft = state.writebackDraft || emptyWritebackDraft()
+  const target = (row.vouchers || []).find((item) => item.id === state.writebackTargetId)
+  const detailRemaining = target ? remainingWriteoffAmount(target) : remaining
+  const detailWritten = target ? writtenOffAmount(target) : 0
+  const errors = draft.errors || {}
+  const isInvoice = state.writebackStyle === '發票'
+  const needTaxId = needsWritebackInvoiceTaxId(row)
+  const allowDecimal = allowsDecimalAmount(currency)
+  const invoiceFields = isInvoice ? `
+    <div class="modal-row"><span class="required">發票號碼（憑證號碼）</span><div class="modal-field"><input id="wb-invno" class="${errCls(errors,'invoiceNo')}" placeholder="請輸入發票號碼" value="${esc(draft.invoiceNo)}">${errText(errors,'invoiceNo')}</div></div>
+    ${needTaxId ? `<div class="modal-row"><span class="required">發票統編</span><div class="modal-field"><select id="wb-invtax" class="${errCls(errors,'invoiceTaxId')}"><option value="">請選擇</option>${WRITEBACK_INVOICE_TAX_IDS.map((x)=>`<option ${x===draft.invoiceTaxId?'selected':''}>${x}</option>`).join('')}</select>${errText(errors,'invoiceTaxId')}</div></div>` : ''}
+    <div class="modal-row"><span class="required">發票日期</span><div class="modal-field"><input id="wb-invdate" class="${errCls(errors,'invoiceDate')}" type="date" value="${esc(draft.invoiceDate)}">${errText(errors,'invoiceDate')}</div></div>
+    <div class="modal-row"><span class="required">發票格式</span><div class="modal-field"><select id="wb-invfmt" class="${errCls(errors,'invoiceFormat')}"><option value="">請選擇</option>${INVOICE_FORMATS.map((x)=>`<option ${x===draft.invoiceFormat?'selected':''}>${x}</option>`).join('')}</select>${errText(errors,'invoiceFormat')}</div></div>
+  ` : ''
+  const fileField = `<div class="file-block" style="margin-left:0"><label class="required">上傳附件</label><input id="wb-file" type="file">${draft.file ? `<div class="file-names">${esc(draft.file.name)}</div>` : ''}${errText(errors,'file')}</div>`
+  const backModal = state.writeoffModal === 'back' && target ? `
+    <div class="modal-mask" id="writeoff-mask">
+      <div class="modal-card">
+        <div class="modal-head"><h2>回壓憑證文件</h2><button type="button" class="modal-close" id="writeoff-close">×</button></div>
+        <div class="modal-row"><span class="required">選擇憑證樣式</span><div class="modal-field"><select id="wb-style"><option ${isInvoice?'selected':''}>發票</option><option ${!isInvoice?'selected':''}>其他</option></select></div></div>
+        ${invoiceFields}
+        <div class="modal-row"><span class="required">金額</span><div class="modal-field"><input id="wb-amount" class="${errCls(errors,'amount')}" inputmode="${allowDecimal ? 'decimal' : 'numeric'}" value="${esc(draft.amount)}" placeholder="不可超過 ${formatAmount(detailRemaining, currency)}">${errText(errors,'amount')}</div></div>
+        ${fileField}
+        <p class="writeback-summary">付款總金額：${formatAmount(paidTotal, currency)}　|　本明細已核銷：${formatAmount(detailWritten, currency)}　|　本明細未核銷餘額：${formatAmount(detailRemaining, currency)}</p>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-default" id="writeoff-cancel">取消</button>
+          <button type="button" class="btn btn-primary" id="writeoff-ok">確定</button>
+        </div>
+      </div>
+    </div>` : ''
+  const rec = state.viewingWriteback
+  const viewModal = state.writeoffModal === 'view' && rec ? `
+    <div class="modal-mask" id="writeoff-mask">
+      <div class="modal-card">
+        <div class="modal-head"><h2>回壓憑證檢視：${esc(row.no)}-${esc(rec.id)}</h2><button type="button" class="modal-close" id="writeoff-close">×</button></div>
+        <div class="view-meta">
+          <div><dt>核銷單號</dt><dd>${esc(row.no)}-${esc(rec.id)}</dd></div>
+          <div><dt>憑證樣式</dt><dd>${esc(rec.style)}</dd></div>
+          ${rec.style === '發票' ? `
+          <div><dt>發票格式</dt><dd>${esc(rec.invoiceFormat || '-')}</dd></div>
+          <div><dt>發票號碼（憑證號碼）</dt><dd>${esc(rec.invoiceNo || '-')}</dd></div>
+          ${rec.invoiceTaxId ? `<div><dt>發票統編</dt><dd>${esc(rec.invoiceTaxId)}</dd></div>` : ''}
+          <div><dt>發票日期</dt><dd>${esc((rec.invoiceDate || '').replace(/-/g,'/') || '-')}</dd></div>
+          ` : ''}
+          <div><dt>金額</dt><dd>${formatAmount(rec.amount, currency)}</dd></div>
+          <div><dt>廠商統編</dt><dd>${esc(rec.vendorTaxId || '-')}</dd></div>
+          <div><dt>上傳時間</dt><dd>${esc(rec.uploadedAt)}</dd></div>
+        </div>
+        <div>憑證檔案${rec.file ? '（' + esc(rec.file.name) + '）' : '：尚未上傳'}</div>
+        <div class="view-files-body writeback-file-body">
+          ${rec.file
+            ? filePreviewHtml(rec.file, '回壓文件')
+            : '<p class="placeholder-note">尚未上傳回壓文件</p>'}
+        </div>
+        <div class="modal-foot"><button type="button" class="btn btn-default" id="writeoff-cancel">關閉</button></div>
+      </div>
+    </div>` : ''
+  const rowsHtml = source.length === 0
+    ? `<tr><td colspan="4" class="writeoff-empty">尚無待核銷明細。請先新增憑證明細並完成付款。</td></tr>`
+    : source.map((item, idx) => {
+        const full = remainingWriteoffAmount(item) <= 0
+        const disabled = !canWriteback || full
+        const title = row.status === '已完成'
+          ? '已完成申請不可再回壓'
+          : (full ? '此明細已全額回壓，不可再回壓' : (!canWriteback ? '僅建檔人可回壓憑證' : ''))
+        const childRows = writebacksOf(item).map((rec) => `
+          <tr class="writeoff-child">
+            <td colspan="3">${esc(formatWritebackLabel(rec, currency))}</td>
+            <td class="writeoff-ops">
+              <button type="button" data-wo="view" data-vid="${item.id}" data-wbid="${rec.id}">檢視憑證</button>
+              ${canWriteback ? `<button type="button" class="danger" data-wo="void" data-vid="${item.id}" data-wbid="${rec.id}">作廢</button>` : ''}
+            </td>
+          </tr>
+        `).join('')
+        return `
+          <tr>
+            <td>${idx + 1}. ${esc(item.purpose)}</td>
+            <td>${item.taxable}</td>
+            <td class="num">${formatAmount(item.payAmount, currency)}</td>
+            <td class="writeoff-ops">
+              <button type="button" data-wo="back" data-vid="${item.id}" ${disabled ? 'disabled' : ''} title="${esc(title)}">回壓憑證文件</button>
+            </td>
+          </tr>
+          ${childRows}
+        `
+      }).join('')
+  return `
+    <div class="writeoff-panel">
+      <p class="writeoff-summary">母單：${row.no}（未核銷餘額：${formatAmount(remaining, currency)}）</p>
+      <table class="writeoff-table">
+        <thead><tr><th>明細</th><th>應稅 / 未稅</th><th>金額</th><th>操作</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+    ${backModal}${viewModal}
+  `
+}
+
+function renderWorkspace(){
+  const row = currentRow()
+  if (!row) {
+    return `<div class="summary-card"><p class="placeholder-note">找不到這張付款申請。</p><button class="btn btn-default" id="btn-back">返回列表</button></div>`
+  }
+  const showWriteoff = showWriteoffTab(row)
+  if (state.tab === 'writeoff' && !showWriteoff) state.tab = 'details'
+  const writable = canEdit(state.role, row.status)
+  const writeoffType = needsWriteoff(row.type)
+
+  let hint = ''
+  if (writeoffType && showWriteoff) {
+    hint = '此單為「事後才拿到發票」。財務已完成付款，顯示 <strong>3 個頁籤</strong>。明細可逐列核銷，列狀態為待核銷／部分核銷／核銷完成；全部核銷完成後母單為已完成。'
+  } else if (writeoffType) {
+    hint = '此單為「事後才拿到發票」。完成付款前只顯示 <strong>2 個頁籤</strong>。'
+  } else {
+    hint = '此單為「申請前即可拿到發票」，只顯示 <strong>2 個頁籤</strong>。'
+  }
+
+  let body = ''
+  if (state.tab === 'overview') {
+    body = renderOverview()
+  } else if (state.tab === 'details') {
+    body = renderDetailsTab(row)
+  } else {
+    body = renderWriteoffTab(row)
+  }
+
+  return `
+    <div class="page-header">
+      <div><h1>付款申請單</h1><p class="field-hint">單號：${row.no}　狀態：${row.status}</p></div>
+      <button class="btn btn-default" id="btn-back">返回列表</button>
+    </div>
+    <div class="mode-banner ${writable ? 'is-edit' : 'is-view'}">目前操作人：${state.role}　狀態：${row.status}　${writable ? '此狀態可由目前操作人編輯「付款總覽」「款項憑證明細」。' : '此狀態目前操作人不可編輯，付款總覽與款項憑證明細為唯讀。'}</div>
+    <div class="logic-hint">${hint}</div>
+    <div class="tabs">
+      <button type="button" class="tab ${state.tab==='overview'?'active':''}" data-tab="overview">付款總覽</button>
+      <button type="button" class="tab ${state.tab==='details'?'active':''}" data-tab="details">款項憑證明細</button>
+      ${showWriteoff ? `<button type="button" class="tab ${state.tab==='writeoff'?'active':''}" data-tab="writeoff">核銷歷史</button>` : ''}
+    </div>
+    ${body}
+  `
+}
+
+function bindDatePicker(){
+  document.querySelectorAll('[data-date-open]').forEach((btn) => {
+    btn.onclick = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const key = btn.dataset.dateOpen
+      if (state.datePicker && state.datePicker.key === key) {
+        state.datePicker = null
+        render()
+        return
+      }
+      const from = state.filters[key + 'From'] || today()
+      const view = parseMonth(from)
+      state.datePicker = { key, viewY: view.y, viewM: view.m, hover: '' }
+      render()
+    }
+  })
+  document.querySelectorAll('[data-date-nav]').forEach((btn) => {
+    btn.onclick = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (!state.datePicker) return
+      const next = addMonths(state.datePicker.viewY, state.datePicker.viewM, Number(btn.dataset.dateNav))
+      state.datePicker.viewY = next.y
+      state.datePicker.viewM = next.m
+      render()
+    }
+  })
+  document.querySelectorAll('[data-date-pick]').forEach((btn) => {
+    btn.onclick = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (!state.datePicker) return
+      const key = state.datePicker.key
+      const date = btn.dataset.datePick
+      const from = state.filters[key + 'From']
+      const to = state.filters[key + 'To']
+      if (!from || to) {
+        state.filters[key + 'From'] = date
+        state.filters[key + 'To'] = ''
+        state.datePicker.hover = ''
+        render()
+        return
+      }
+      state.filters[key + 'From'] = from <= date ? from : date
+      state.filters[key + 'To'] = from <= date ? date : from
+      state.datePicker = null
+      render()
+    }
+  })
+  const panel = document.querySelector('.date-range-panel')
+  if (panel) {
+    panel.style.left = '0'
+    panel.style.right = 'auto'
+    const rect = panel.getBoundingClientRect()
+    if (rect.right > window.innerWidth - 8) {
+      panel.style.left = 'auto'
+      panel.style.right = '0'
+    }
+  }
+}
+
+function bindFilterPayee(){
+  document.querySelectorAll('input[name="f-payee-kind"]').forEach((el) => {
+    el.onchange = () => {
+      state.filters.payeeKind = el.value
+      state.filters.payeeId = ''
+      state.filterPayeeOpen = false
+      state.filterPayeeKeyword = ''
+      render()
+    }
+  })
+  const trigger = document.getElementById('f-payee-trigger')
+  if (!trigger) return
+  trigger.onclick = (e) => {
+    e.preventDefault()
+    state.filterPayeeOpen = !state.filterPayeeOpen
+    if (!state.filterPayeeOpen) state.filterPayeeKeyword = ''
+    render()
+    const search = document.getElementById('f-payee-search')
+    if (search) search.focus()
+  }
+  const search = document.getElementById('f-payee-search')
+  if (search) {
+    search.oninput = () => {
+      const cursor = search.selectionStart
+      state.filterPayeeKeyword = search.value
+      render()
+      const el = document.getElementById('f-payee-search')
+      if (el) {
+        el.focus()
+        el.setSelectionRange(cursor, cursor)
+      }
+    }
+  }
+  document.querySelectorAll('[data-f-payee]').forEach((btn) => {
+    btn.onclick = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      state.filters.payeeId = btn.dataset.fPayee || ''
+      state.filterPayeeOpen = false
+      state.filterPayeeKeyword = ''
+      render()
+    }
+  })
+}
+
+function bindPayeeSelect(){
+  const trigger = document.getElementById('payee-trigger')
+  if (!trigger || trigger.disabled) return
+  trigger.onclick = (e) => {
+    e.preventDefault()
+    state.payeeOpen = !state.payeeOpen
+    if (!state.payeeOpen) state.payeeKeyword = ''
+    render()
+    const search = document.getElementById('payee-search')
+    if (search) search.focus()
+  }
+  const search = document.getElementById('payee-search')
+  if (search) {
+    search.oninput = () => {
+      const cursor = search.selectionStart
+      state.payeeKeyword = search.value
+      render()
+      const el = document.getElementById('payee-search')
+      if (el) {
+        el.focus()
+        el.setSelectionRange(cursor, cursor)
+      }
+    }
+  }
+  document.querySelectorAll('[data-payee]').forEach((btn) => {
+    btn.onclick = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      state.form.vendor = btn.dataset.payee
+      state.payeeOpen = false
+      state.payeeKeyword = ''
+      state.saved = false
+      render()
+    }
+  })
+}
+
+function bindForm(){
+  const typeEl = document.getElementById('o-type')
+  const dateEl = document.getElementById('o-date')
+  if (!typeEl || !dateEl) return
+  const sync = () => {
+    if (typeEl.disabled) return
+    state.saved = false
+    state.form.type = typeEl.value
+    state.form.date = dateEl.value
+    state.form.month = (document.getElementById('o-month') || {}).value || ''
+    state.form.vendor = (document.getElementById('o-vendor') || {}).value || ''
+    if (isPettyType(state.form.type)) {
+      if (!EMPLOYEES.some((e) => e.id === state.form.vendor)) {
+        const applicant = (currentRow() && currentRow().applicant) || 'ruby.lee'
+        state.form.vendor = findEmployeeForApplicant(applicant).id
+      }
+    } else if (EMPLOYEES.some((e) => e.id === state.form.vendor) && !VENDORS.some((v) => v.id === state.form.vendor)) {
+      state.form.vendor = ''
+    }
+    state.form.currency = document.getElementById('o-currency').value
+    state.form.method = document.getElementById('o-method').value
+    state.form.fee = document.getElementById('o-fee').value
+    state.form.expected = expectedFor(state.form.type, state.form.date)
+    state.payeeOpen = false
+    state.payeeKeyword = ''
+    render()
+  }
+  typeEl.onchange = sync
+  dateEl.onchange = sync
+  document.getElementById('overview-form').onsubmit = (e) => {
+    e.preventDefault()
+    if (typeEl.disabled) return
+    state.submitted = true
+    state.form.type = typeEl.value
+    state.form.date = dateEl.value
+    state.form.month = (document.getElementById('o-month') || {}).value || ''
+    state.form.vendor = document.getElementById('o-vendor').value
+    state.form.currency = document.getElementById('o-currency').value
+    state.form.method = document.getElementById('o-method').value
+    state.form.fee = document.getElementById('o-fee').value
+    const expectedEl = document.getElementById('o-expected')
+    if (expectedEl && !expectedEl.disabled) state.form.expected = expectedEl.value
+    const meta = META[state.form.type]
+    if ((meta.settlement && !state.form.month) || !state.form.vendor) { render(); return }
+    if (state.page === 'workspace') {
+      const row = currentRow()
+      row.type = state.form.type
+      row.expected = state.form.expected
+      row.overview = { ...state.form, vendorName: payeeDisplayName(state.form.vendor, state.form.type) }
+      state.saved = true
+      state.submitted = false
+      render()
+      return
+    }
+    const id = 'DRAFT-' + Date.now()
+    const created = {
+      id,
+      no: 'PA' + today().replaceAll('-', '') + String(ROWS.length + 1).padStart(3, '0'),
+      type: state.form.type,
+      applicant: 'ruby.lee',
+      details: 0,
+      amount: 0,
+      created: today() + ' 12:00:00',
+      expected: state.form.expected,
+      actual: null,
+      reason: null,
+      status: '草稿',
+      vouchers: [],
+      overview: { ...state.form, id, vendorName: payeeDisplayName(state.form.vendor, state.form.type) },
+      exchangeRate: null,
+      exportedFile: null,
+    }
+    ROWS.unshift(created)
+    state.currentId = id
+    state.tab = 'details'
+    state.saved = false
+    setPage('workspace')
+  }
+}
+
+function render(){
+  document.querySelectorAll('.ellipsis-bubble').forEach((node) => node.remove())
+  const app = document.getElementById('app')
+  if (state.page === 'list') app.innerHTML = renderList()
+  else if (state.page === 'overview') app.innerHTML = renderOverview()
+  else app.innerHTML = renderWorkspace()
+
+  if (state.page === 'list') {
+    document.getElementById('btn-new').onclick = () => {
+      state.submitted = false
+      state.form = { type:'個人代墊報支', month:'', date: today(), vendor: findEmployeeForApplicant('ruby.lee').id, currency:'臺幣TWD', method:'匯款', fee:'公司負擔', expected: expectedFor('個人代墊報支', today()) }
+      setPage('overview')
+    }
+    const noInput = document.getElementById('f-no')
+    noInput.oninput = () => {
+      const cursor = noInput.selectionStart
+      state.filters.no = noInput.value
+      render()
+      const el = document.getElementById('f-no')
+      el.focus()
+      el.setSelectionRange(cursor, cursor)
+    }
+    document.getElementById('btn-search').onclick = () => {
+      const f = state.filters
+      state.filters = {
+        no: document.getElementById('f-no').value,
+        type: document.getElementById('f-type').value,
+        status: document.getElementById('f-status').value,
+        applicant: document.getElementById('f-applicant').value,
+        payeeKind: f.payeeKind || '',
+        payeeId: f.payeeId || '',
+        createdFrom: f.createdFrom || '',
+        createdTo: f.createdTo || '',
+        expectedFrom: f.expectedFrom || '',
+        expectedTo: f.expectedTo || '',
+        actualFrom: f.actualFrom || '',
+        actualTo: f.actualTo || '',
+      }
+      render()
+    }
+    document.getElementById('btn-reset').onclick = () => {
+      state.filters = { no:'', type:'', status:'', applicant:'', payeeKind:'', payeeId:'', createdFrom:'', createdTo:'', expectedFrom:'', expectedTo:'', actualFrom:'', actualTo:'' }
+      state.filterPayeeOpen = false
+      state.filterPayeeKeyword = ''
+      state.datePicker = null
+      state.notice = ''
+      render()
+    }
+    bindFilterPayee()
+    bindDatePicker()
+    bindReasonBubbles()
+    app.querySelectorAll('[data-act]').forEach(btn => {
+      btn.onclick = () => {
+        if (btn.disabled) return
+        const row = ROWS.find(r => r.id === btn.dataset.id)
+        const act = btn.dataset.act
+        if (act === 'edit') {
+          state.currentId = row.id
+          state.tab = 'overview'
+          state.form = formFromRow(row)
+          state.saved = false
+          state.submitted = false
+          setPage('workspace')
+          return
+        }
+        if (act === 'view' || act === 'review') {
+          state.currentId = row.id
+          state.tab = 'details'
+          state.form = formFromRow(row)
+          state.saved = false
+          state.submitted = false
+          setPage('workspace')
+          return
+        }
+        if (act === 'void') {
+          if (confirm('確定作廢 ' + row.no + '？')) {
+            row.status = '已作廢'
+            state.notice = row.no + ' 已作廢'
+          }
+          render()
+          return
+        }
+        if (act === 'writeoff') {
+          state.currentId = row.id
+          state.tab = 'writeoff'
+          state.form = formFromRow(row)
+          setPage('workspace')
+          return
+        }
+        if (act === 'auditFile') {
+          state.auditOpen = true
+          state.auditTargetId = row.id
+          render()
+          return
+        }
+        if (act === 'pay') {
+          state.payOpen = true
+          state.payTargetId = row.id
+          state.payRate = ''
+          state.payDate = today()
+          state.payDateError = ''
+          state.payError = ''
+          render()
+          return
+        }
+        const map = { }
+        state.notice = row.no + '：' + (map[act] || act)
+        render()
+      }
+    })
+    bindPayRateModal()
+    bindAuditFileModal()
+  }
+  if (state.page === 'overview') {
+    bindForm()
+    bindPayeeSelect()
+  }
+  if (state.page === 'workspace') {
+    const back = document.getElementById('btn-back')
+    if (back) back.onclick = () => setPage('list')
+    app.querySelectorAll('[data-tab]').forEach((btn) => {
+      btn.onclick = () => {
+        state.tab = btn.dataset.tab
+        render()
+      }
+    })
+    bindForm()
+    bindPayeeSelect()
+    bindVoucherUi()
+  }
+}
+
+function bindAuditFileModal(){
+  const closeAudit = () => {
+    state.auditOpen = false
+    state.auditTargetId = ''
+    render()
+  }
+  const mask = document.getElementById('audit-file-mask')
+  if (mask) mask.onclick = (e) => { if (e.target === mask) closeAudit() }
+  const closeBtn = document.getElementById('audit-file-close')
+  const cancelBtn = document.getElementById('audit-file-cancel')
+  if (closeBtn) closeBtn.onclick = closeAudit
+  if (cancelBtn) cancelBtn.onclick = closeAudit
+  const dl = document.getElementById('audit-file-download')
+  if (dl && !dl.disabled) dl.onclick = () => {
+    const row = ROWS.find((r) => r.id === state.auditTargetId)
+    const file = row && row.exportedFile
+    if (!file) return
+    const link = document.createElement('a')
+    link.href = file.url
+    link.download = file.name
+    link.click()
+  }
+}
+
+function bindPayRateModal(){
+  const closePay = () => {
+    state.payOpen = false
+    state.payTargetId = ''
+    state.payRate = ''
+    state.payDate = ''
+    state.payDateError = ''
+    state.payError = ''
+    render()
+  }
+  const mask = document.getElementById('pay-rate-mask')
+  if (mask) mask.onclick = (e) => { if (e.target === mask) closePay() }
+  const closeBtn = document.getElementById('pay-rate-close')
+  const cancelBtn = document.getElementById('pay-rate-cancel')
+  if (closeBtn) closeBtn.onclick = closePay
+  if (cancelBtn) cancelBtn.onclick = closePay
+  const dateEl = document.getElementById('pay-date')
+  if (dateEl) {
+    dateEl.oninput = () => {
+      state.payDate = dateEl.value
+      if (state.payDateError) state.payDateError = ''
+    }
+    dateEl.focus()
+  }
+  const rateEl = document.getElementById('pay-rate')
+  if (rateEl) {
+    rateEl.oninput = () => {
+      const next = sanitizeRateInput(rateEl.value)
+      if (rateEl.value !== next) rateEl.value = next
+      state.payRate = rateEl.value
+      if (state.payError) state.payError = ''
+    }
+    rateEl.onkeydown = (e) => {
+      if (e.key === 'Enter') document.getElementById('pay-rate-ok').click()
+    }
+  }
+  const ok = document.getElementById('pay-rate-ok')
+  if (ok) ok.onclick = () => {
+    const row = ROWS.find((r) => r.id === state.payTargetId)
+    if (!row) return
+    const actualPaymentDate = (document.getElementById('pay-date')?.value || '').trim()
+    state.payDate = actualPaymentDate
+    let okPay = true
+    if (!actualPaymentDate) {
+      state.payDateError = '請選擇實際付款日'
+      okPay = false
+    } else {
+      state.payDateError = ''
+    }
+    let exchangeRate
+    const needRate = isForeignCurrency(rowCurrency(row))
+    if (needRate) {
+      const next = (document.getElementById('pay-rate')?.value || '').trim()
+      state.payRate = next
+      if (!next) {
+        state.payError = '請填入付款匯率'
+        okPay = false
+      } else {
+        const parsed = Number(next)
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          state.payError = '請輸入大於 0 的匯率'
+          okPay = false
+        } else {
+          state.payError = ''
+          exchangeRate = parsed
+        }
+      }
+    }
+    if (!okPay) {
+      render()
+      return
+    }
+    completePay(row, { actualPaymentDate, exchangeRate })
+    render()
+  }
+}
+
+function bindVoucherUi(){
+  const row = currentRow()
+  if (!row) return
+  const addBtn = document.getElementById('btn-add-detail')
+  if (addBtn && !addBtn.disabled) addBtn.onclick = () => {
+    state.modalMode = 'add'
+    state.draft = emptyDraft(row)
+    render()
+  }
+  const exp = document.getElementById('btn-export')
+  if (exp && !exp.disabled) exp.onclick = async () => {
+    const hasDraft = row.vouchers.some((item) => item.status === '草稿')
+    // 無草稿但已有導出檔：重複下載同一份
+    if (!hasDraft && row.exportedFile) {
+      const link = document.createElement('a')
+      link.href = row.exportedFile.url
+      link.download = row.exportedFile.name
+      link.click()
+      return
+    }
+    if (!hasDraft) return
+    exp.disabled = true
+    const oldText = exp.textContent
+    exp.textContent = '導出中…'
+    try {
+      await downloadVoucherPdf(row)
+      row.vouchers.forEach((item) => { if (item.status === '草稿') item.status = '待審核' })
+      if (row.status === '審核不通過') row.reason = ''
+      if (row.status === '草稿' || row.status === '審核不通過') row.status = '待審核'
+    } catch (err) {
+      alert('導出 PDF 失敗，請再試一次。')
+    }
+    exp.textContent = oldText
+    render()
+  }
+  const ap = document.getElementById('btn-approve')
+  if (ap && !ap.disabled) ap.onclick = () => {
+    row.status = '待付款'
+    row.reason = ''
+    row.vouchers.forEach((item) => { if (item.status === '待審核') item.status = '審核通過' })
+    render()
+  }
+  const closeReject = () => {
+    state.rejectOpen = false
+    state.rejectReason = ''
+    state.rejectError = ''
+    render()
+  }
+  const rj = document.getElementById('btn-reject')
+  if (rj && !rj.disabled) rj.onclick = () => {
+    state.rejectOpen = true
+    state.rejectReason = ''
+    state.rejectError = ''
+    render()
+  }
+  const rejectMask = document.getElementById('reject-mask')
+  if (rejectMask) rejectMask.onclick = (e) => { if (e.target === rejectMask) closeReject() }
+  const rejectClose = document.getElementById('reject-close')
+  const rejectCancel = document.getElementById('reject-cancel')
+  if (rejectClose) rejectClose.onclick = closeReject
+  if (rejectCancel) rejectCancel.onclick = closeReject
+  const rejectOk = document.getElementById('btn-reject-ok')
+  if (rejectOk) rejectOk.onclick = () => {
+    const reason = (document.getElementById('reject-reason').value || '').trim()
+    if (!reason) {
+      state.rejectReason = document.getElementById('reject-reason').value || ''
+      state.rejectError = '請輸入不通過原因'
+      render()
+      return
+    }
+    row.status = '審核不通過'
+    row.reason = reason
+    row.vouchers.forEach((item) => {
+      if (item.status === '待審核' || item.status === '審核通過') item.status = '草稿'
+    })
+    closeReject()
+  }
+  document.querySelectorAll('[data-vop]').forEach((btn) => {
+    btn.onclick = () => {
+      const item = row.vouchers.find((v) => v.id === btn.dataset.vid)
+      if (!item) return
+      if (btn.dataset.vop === 'view') { state.modalMode = 'view'; state.viewing = item; render() }
+      if (btn.dataset.vop === 'edit') { state.modalMode = 'edit'; state.editingId = item.id; state.draft = emptyDraft(row, item); render() }
+      if (btn.dataset.vop === 'void' && confirm('確定作廢此筆明細？')) {
+        row.vouchers = row.vouchers.filter((v) => v.id !== item.id)
+        refreshRowTotals(row)
+        render()
+      }
+    }
+  })
+  const mask = document.getElementById('detail-mask')
+  if (mask) mask.onclick = (e) => { if (e.target === mask) closeDetailModal() }
+  const closeBtn = document.getElementById('modal-close')
+  const cancelBtn = document.getElementById('modal-cancel')
+  if (closeBtn) closeBtn.onclick = closeDetailModal
+  if (cancelBtn) cancelBtn.onclick = closeDetailModal
+  const purpose = document.getElementById('d-purpose')
+  if (purpose) purpose.onchange = () => {
+    syncDraftFromDom()
+    const meta = PURPOSE_SECOND[state.draft.purpose]
+    const auto = autoFill(row)
+    state.draft.secondFrom = ''
+    state.draft.secondTo = ''
+    state.draft.secondText = (meta.kind === 'month' && auto && (state.draft.purpose === auto.purpose || state.draft.purpose === '通路費用(通路後扣)' || state.draft.purpose === 'URMART月結廠商')) ? auto.month : ''
+    render()
+  }
+  const style = document.getElementById('d-style')
+  if (style) style.onchange = () => { syncDraftFromDom(); if (state.draft.voucherStyle !== '發票') { state.draft.invoiceFormat = ''; state.draft.invoiceDate = '' } render() }
+  const tax = document.getElementById('d-tax')
+  if (tax) tax.onchange = () => {
+    syncDraftFromDom()
+    if (state.draft.taxable === '未稅') state.draft.lines.forEach((l) => { l.taxable = '未稅' })
+    render()
+  }
+  const taxid = document.getElementById('d-taxid')
+  if (taxid) taxid.oninput = () => { taxid.value = taxid.value.replace(/\D/g, '').slice(0, 8) }
+  document.querySelectorAll('.d-line-amt').forEach((el) => {
+    el.oninput = () => {
+      const cleaned = sanitizeAmountInput(el.value, allowsDecimalAmount(rowCurrency(row)))
+      if (el.value !== cleaned) el.value = cleaned
+    }
+    el.onchange = () => { syncDraftFromDom(); render() }
+  })
+  document.querySelectorAll('.d-line-tax').forEach((el) => {
+    el.onchange = () => { syncDraftFromDom(); render() }
+  })
+  const addLine = document.getElementById('btn-add-line')
+  if (addLine) addLine.onclick = (e) => {
+    e.stopPropagation()
+    syncDraftFromDom()
+    state.draft.lines.push({ id: 'L-' + Date.now(), name: '', taxable: state.draft.taxable === '未稅' ? '未稅' : '應稅', amount: '' })
+    render()
+  }
+  document.querySelectorAll('[data-del]').forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation()
+      syncDraftFromDom()
+      state.draft.lines.splice(Number(btn.dataset.del), 1)
+      render()
+    }
+  })
+  const file = document.getElementById('d-file')
+  if (file) file.onchange = () => {
+    syncDraftFromDom()
+    state.draft.voucherFile = file.files[0] ? fileMeta(file.files[0]) : null
+    render()
+  }
+  const atts = document.getElementById('d-atts')
+  if (atts) atts.onchange = () => {
+    syncDraftFromDom()
+    Array.from(atts.files || []).forEach((f) => state.draft.attachments.push(fileMeta(f)))
+    render()
+  }
+  const ok = document.getElementById('modal-ok')
+  if (ok) ok.onclick = () => {
+    syncDraftFromDom()
+    const d = state.draft
+    const second = PURPOSE_SECOND[d.purpose]
+    const errors = {}
+    if (second.kind === 'dateRange' && (!d.secondFrom || !d.secondTo)) errors.second = '請設定' + second.label
+    else if (second.kind === 'dateRange' && d.secondFrom > d.secondTo) errors.second = second.label + '的結束日不可早於開始日'
+    else if (second.kind !== 'dateRange' && !(d.secondText || '').trim()) errors.second = '請輸入' + second.label
+    if (d.voucherStyle === '發票' && !d.invoiceFormat) errors.invoiceFormat = '請選擇發票格式'
+    if (!(d.invoiceNo || '').trim()) errors.invoiceNo = '請輸入發票號碼(憑證號碼)'
+    if (d.voucherStyle === '發票' && !d.invoiceDate) errors.invoiceDate = '請選擇發票日期'
+    if (!/^\d{8}$/.test(d.vendorTaxId)) errors.vendorTaxId = '請輸入 8 位數字統編'
+    d.lines.forEach((l, i) => {
+      if (!(l.name || '').trim()) errors['lineName-' + i] = '請輸入明細細項'
+      const amountErr = amountInputError(String(l.amount || ''), allowsDecimalAmount(rowCurrency(row)))
+      if (amountErr) errors['lineAmount-' + i] = amountErr
+    })
+    if (!d.voucherFile) errors.voucherFile = '請上傳憑證檔案'
+    d.errors = errors
+    d.error = ''
+    if (Object.keys(errors).length) { render(); return }
+    if (isForeignCurrency(rowCurrency(row))) d.taxable = '未稅'
+    const allowDecimal = allowsDecimalAmount(rowCurrency(row))
+    const lines = d.lines.map((l) => ({ id: l.id, name: l.name.slice(0, 50), taxable: d.taxable === '未稅' ? '未稅' : l.taxable, amount: commitAmount(l.amount, allowDecimal) }))
+    const tot = voucherTotals(d.taxable, lines, allowDecimal)
+    const saved = {
+      id: d.id,
+      vendorTaxId: d.vendorTaxId,
+      purpose: d.purpose,
+      remarkNo: remarkNo(d.purpose, d.secondText, d.secondFrom, d.secondTo),
+      secondText: d.secondText,
+      secondFrom: d.secondFrom,
+      secondTo: d.secondTo,
+      voucherStyle: d.voucherStyle,
+      invoiceFormat: d.voucherStyle === '發票' ? d.invoiceFormat : '',
+      invoiceNo: d.invoiceNo,
+      invoiceDate: d.voucherStyle === '發票' ? (d.invoiceDate || '') : '',
+      taxable: d.taxable,
+      untaxedAmount: tot.untaxedAmount,
+      taxAmount: tot.taxAmount,
+      payAmount: tot.payAmount,
+      status: d.status || '草稿',
+      lines,
+      voucherFile: d.voucherFile,
+      attachments: d.attachments,
+      writebacks: d.writebacks || [],
+    }
+    const idx = row.vouchers.findIndex((v) => v.id === saved.id)
+    if (idx >= 0) row.vouchers[idx] = saved
+    else row.vouchers.push(saved)
+    refreshRowTotals(row)
+    closeDetailModal()
+  }
+  document.querySelectorAll('[data-wo]').forEach((btn) => {
+    btn.onclick = () => {
+      if (btn.disabled) return
+      const item = row.vouchers.find((v) => v.id === btn.dataset.vid)
+      if (btn.dataset.wo === 'back') {
+        if (!item || remainingWriteoffAmount(item) <= 0 || state.role !== '建檔人') return
+        if (!(row.status === '待核銷' || row.status === '部分核銷')) return
+        state.writeoffModal = 'back'
+        state.writebackTargetId = item.id
+        state.writebackStyle = '發票'
+        state.writebackDraft = emptyWritebackDraft()
+        render()
+        return
+      }
+      if (btn.dataset.wo === 'view') {
+        const rec = item ? writebacksOf(item).find((w) => w.id === btn.dataset.wbid) : null
+        if (!rec) return
+        state.writeoffModal = 'view'
+        state.viewingWriteback = { ...rec, vendorTaxId: item.vendorTaxId }
+        render()
+        return
+      }
+      if (btn.dataset.wo === 'void') {
+        if (!(row.status === '待核銷' || row.status === '部分核銷') || state.role !== '建檔人') return
+        if (!confirm('確定作廢此筆核銷紀錄？作廢後將刪除該筆回壓資料與核銷金額。')) return
+        if (!item) return
+        const rec = writebacksOf(item).find((w) => w.id === btn.dataset.wbid)
+        if (!rec) return
+        if (rec.file && rec.file.url && String(rec.file.url).indexOf('blob:') === 0) {
+          URL.revokeObjectURL(rec.file.url)
+        }
+        item.writebacks = writebacksOf(item).filter((w) => w.id !== rec.id)
+        item.status = nextDetailWriteoffStatus(item)
+        const parentStatus = nextParentWriteoffStatus(row.vouchers)
+        if (parentStatus) row.status = parentStatus
+        render()
+      }
+    }
+  })
+  const closeWriteoff = () => {
+    state.writeoffModal = ''
+    state.writebackTargetId = ''
+    state.viewingWriteback = null
+    state.writebackDraft = emptyWritebackDraft()
+    render()
+  }
+  const syncWritebackDraft = () => {
+    const draft = state.writebackDraft || emptyWritebackDraft()
+    const invno = document.getElementById('wb-invno')
+    const invtax = document.getElementById('wb-invtax')
+    const invdate = document.getElementById('wb-invdate')
+    const invfmt = document.getElementById('wb-invfmt')
+    const amount = document.getElementById('wb-amount')
+    if (invno) draft.invoiceNo = invno.value
+    if (invtax) draft.invoiceTaxId = invtax.value
+    if (invdate) draft.invoiceDate = invdate.value
+    if (invfmt) draft.invoiceFormat = invfmt.value
+    if (amount) draft.amount = sanitizeAmountInput(amount.value, allowsDecimalAmount(rowCurrency(row)))
+    state.writebackDraft = draft
+  }
+  const woMask = document.getElementById('writeoff-mask')
+  if (woMask) woMask.onclick = (e) => { if (e.target === woMask) closeWriteoff() }
+  const woClose = document.getElementById('writeoff-close')
+  const woCancel = document.getElementById('writeoff-cancel')
+  const woOk = document.getElementById('writeoff-ok')
+  if (woClose) woClose.onclick = closeWriteoff
+  if (woCancel) woCancel.onclick = closeWriteoff
+  if (woOk) woOk.onclick = () => {
+    syncWritebackDraft()
+    const item = row.vouchers.find((v) => v.id === state.writebackTargetId)
+    if (!item) { closeWriteoff(); return }
+    if (row.status === '已作廢') { closeWriteoff(); return }
+    const draft = state.writebackDraft
+    const remaining = remainingWriteoffAmount(item)
+    const allowDecimal = allowsDecimalAmount(rowCurrency(row))
+    const errors = {}
+    if (state.writebackStyle === '發票') {
+      if (!(draft.invoiceNo || '').trim()) errors.invoiceNo = '請輸入發票號碼（憑證號碼）'
+      if (needsWritebackInvoiceTaxId(row) && !draft.invoiceTaxId) errors.invoiceTaxId = '請選擇發票統編'
+      if (!draft.invoiceDate) errors.invoiceDate = '請選擇發票日期'
+      if (!draft.invoiceFormat) errors.invoiceFormat = '請選擇發票格式'
+    }
+    const amountErr = amountInputError(String(draft.amount || ''), allowDecimal)
+    if (amountErr) errors.amount = amountErr
+    else if (commitAmount(draft.amount, allowDecimal) > remaining) errors.amount = '回壓金額不可超過本明細未核銷餘額（' + formatAmount(remaining, rowCurrency(row)) + '）'
+    if (!draft.file) errors.file = '請上傳附件'
+    draft.errors = errors
+    draft.error = ''
+    if (Object.keys(errors).length) { render(); return }
+    const n = commitAmount(draft.amount, allowDecimal)
+    if (!item.writebacks) item.writebacks = []
+    item.writebacks.push({
+      id: 'WB-' + Date.now(),
+      style: state.writebackStyle,
+      invoiceNo: state.writebackStyle === '發票' ? draft.invoiceNo.trim() : '',
+      invoiceTaxId: state.writebackStyle === '發票' && needsWritebackInvoiceTaxId(row) ? (draft.invoiceTaxId || '') : '',
+      invoiceDate: state.writebackStyle === '發票' ? draft.invoiceDate : '',
+      invoiceFormat: state.writebackStyle === '發票' ? draft.invoiceFormat : '',
+      amount: n,
+      uploadedAt: formatWritebackStamp(),
+      file: draft.file,
+    })
+    item.status = nextDetailWriteoffStatus(item)
+    const parent = nextParentWriteoffStatus(row.vouchers)
+    if (parent) row.status = parent
+    closeWriteoff()
+  }
+  const wbStyle = document.getElementById('wb-style')
+  if (wbStyle) wbStyle.onchange = () => {
+    syncWritebackDraft()
+    state.writebackStyle = wbStyle.value
+    render()
+  }
+  const wbFile = document.getElementById('wb-file')
+  if (wbFile) wbFile.onchange = () => {
+    syncWritebackDraft()
+    state.writebackDraft.file = wbFile.files[0] ? fileMeta(wbFile.files[0]) : null
+    render()
+  }
+  const wbAmount = document.getElementById('wb-amount')
+  if (wbAmount) wbAmount.oninput = () => {
+    const cleaned = sanitizeAmountInput(wbAmount.value, allowsDecimalAmount(rowCurrency(row)))
+    if (wbAmount.value !== cleaned) wbAmount.value = cleaned
+  }
+}
+
+document.getElementById('nav-list').onclick = () => setPage('list')
+document.addEventListener('mousedown', (e) => {
+  let changed = false
+  if (state.payeeOpen) {
+    const wrap = document.getElementById('payee-wrap')
+    if (!(wrap && wrap.contains(e.target))) {
+      state.payeeOpen = false
+      state.payeeKeyword = ''
+      changed = true
+    }
+  }
+  if (state.filterPayeeOpen) {
+    const wrap = document.getElementById('f-payee-wrap')
+    if (!(wrap && wrap.contains(e.target))) {
+      state.filterPayeeOpen = false
+      state.filterPayeeKeyword = ''
+      changed = true
+    }
+  }
+  if (state.datePicker) {
+    const wrap = document.getElementById('date-picker-' + state.datePicker.key)
+    if (!(wrap && wrap.contains(e.target))) {
+      state.datePicker = null
+      changed = true
+    }
+  }
+  if (changed) render()
+})
+document.querySelectorAll('.role-tab').forEach(btn => {
+  btn.onclick = () => {
+    state.role = btn.dataset.role
+    document.querySelectorAll('.role-tab').forEach(b => b.classList.toggle('active', b === btn))
+    render()
+  }
+})
+render()
+</script>
+</body>
+</html>

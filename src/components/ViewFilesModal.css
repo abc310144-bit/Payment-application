@@ -1,0 +1,53 @@
+.view-files-card {
+  width: min(860px, 100%);
+}
+
+.view-files-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: calc(100vh - 220px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.file-preview {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.file-preview-tag {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2b5cff;
+  padding-top: 4px;
+}
+
+.file-preview img {
+  display: block;
+  max-width: 100%;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+}
+
+.file-preview-pdf {
+  display: block;
+  width: 100%;
+  height: 520px;
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.file-preview a {
+  color: #2b5cff;
+  word-break: break-all;
+}
+
+.file-empty {
+  margin: 0;
+  font-size: 13px;
+  color: #8c8c8c;
+}

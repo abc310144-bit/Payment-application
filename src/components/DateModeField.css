@@ -1,0 +1,183 @@
+.date-mode-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #8c8c8c;
+  min-width: 0;
+  position: relative;
+  z-index: 3;
+}
+
+.date-range-picker {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 36px;
+  padding: 0 8px 0 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+  min-width: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.date-range-picker.open,
+.date-range-picker:focus {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.12);
+  outline: none;
+}
+
+.date-range-placeholder,
+.date-range-value {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date-range-placeholder {
+  color: #bfbfbf;
+}
+
+.date-range-value {
+  color: #1f1f1f;
+}
+
+.date-range-arrow {
+  flex: none;
+  margin: 0 8px;
+  color: #bfbfbf;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.date-range-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: #bfbfbf;
+}
+
+.date-range-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 40;
+  display: flex;
+  gap: 0;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.date-cal {
+  width: 252px;
+  padding: 8px 12px 12px;
+}
+
+.date-cal + .date-cal {
+  border-left: 1px solid #f0f0f0;
+}
+
+.date-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  margin-bottom: 4px;
+}
+
+.date-cal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.date-cal-nav {
+  display: flex;
+  gap: 2px;
+}
+
+.date-cal-nav button {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: #8c8c8c;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.date-cal-nav button:hover {
+  background: #f5f5f5;
+  color: #1677ff;
+}
+
+.date-cal-nav-spacer {
+  width: 50px;
+}
+
+.date-cal-week,
+.date-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.date-cal-week span {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.date-cal-day {
+  height: 28px;
+  margin: 2px 0;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+  color: #1f1f1f;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.date-cal-day.is-muted {
+  color: #bfbfbf;
+}
+
+.date-cal-day.is-in-range {
+  background: #e6f4ff;
+  border-radius: 0;
+}
+
+.date-cal-day.is-edge {
+  background: #1677ff;
+  color: #fff;
+  border-color: #1677ff;
+}
+
+.date-cal-day.is-today {
+  border-color: #1677ff;
+}
+
+.date-cal-day.is-hover:not(.is-edge) {
+  border-color: #1677ff;
+}
+
+.date-cal-day:hover:not(.is-edge) {
+  border-color: #1677ff;
+}
