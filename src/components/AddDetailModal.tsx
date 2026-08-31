@@ -59,6 +59,10 @@ function toFileMeta(file: File): VoucherFile {
   return { name: file.name, type: file.type, url: URL.createObjectURL(file) }
 }
 
+function revokeIfBlob(url: string) {
+  if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+}
+
 function FieldError({ message }: { message?: string }) {
   if (!message) return null
   return <p className="field-error">{message}</p>
@@ -504,11 +508,25 @@ export function AddDetailModal({
             type="file"
             onChange={(e) => {
               const file = e.target.files?.[0]
+              if (voucherFile) revokeIfBlob(voucherFile.url)
               setVoucherFile(file ? toFileMeta(file) : null)
+              e.target.value = ''
             }}
           />
           {voucherFile && (
-            <div className="file-names">{voucherFile.name}</div>
+            <div className="file-chip">
+              <span className="file-chip-name">{voucherFile.name}</span>
+              <button
+                type="button"
+                className="file-chip-remove"
+                onClick={() => {
+                  revokeIfBlob(voucherFile.url)
+                  setVoucherFile(null)
+                }}
+              >
+                刪除
+              </button>
+            </div>
           )}
           {errors.voucherFile && (
             <p className="field-error file-error">{errors.voucherFile}</p>
@@ -529,9 +547,23 @@ export function AddDetailModal({
             }}
           />
           {attachments.length > 0 && (
-            <div className="file-names">
-              {attachments.map((file) => file.name).join('、')}
-            </div>
+            <ul className="file-chip-list">
+              {attachments.map((file, idx) => (
+                <li className="file-chip" key={`${file.url}-${idx}`}>
+                  <span className="file-chip-name">{file.name}</span>
+                  <button
+                    type="button"
+                    className="file-chip-remove"
+                    onClick={() => {
+                      revokeIfBlob(file.url)
+                      setAttachments((prev) => prev.filter((_, i) => i !== idx))
+                    }}
+                  >
+                    刪除
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 
