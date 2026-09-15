@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CompletePaymentModal } from '../components/CompletePaymentModal'
-import { AuditFileModal } from '../components/AuditFileModal'
 import { ApplicationTable } from '../components/ApplicationTable'
 import { DateModeField } from '../components/DateModeField'
 import { VendorSelect } from '../components/VendorSelect'
@@ -9,12 +8,16 @@ import {
   useApplications,
   type StoredApplication,
 } from '../context/ApplicationContext'
+import { useRole } from '../context/RoleContext'
 import { mockVendors } from '../data/mockVendors'
 import { mockEmployees } from '../data/mockEmployees'
 import {
+  CURRENCIES,
   PAYMENT_STATUSES,
   PAYMENT_TYPES,
+  completesOnApprove,
   isForeignCurrency,
+  type CurrencyCode,
   type PaymentApplication,
   type PaymentStatus,
   type PaymentType,
@@ -25,7 +28,7 @@ import {
   type DateQuery,
 } from '../utils/dateQuery'
 import { fuzzyMatch } from '../utils/fuzzy'
-import { describeAction } from '../utils/operations'
+import { canCompletePayment, describeAction } from '../utils/operations'
 import { needsWriteoffHistory } from '../utils/writeoff'
 import './GeneralPaymentPage.css'
 
@@ -38,6 +41,7 @@ interface Filters {
   applicant: string
   payeeKind: PayeeKind
   payeeId: string
+  currency: '' | CurrencyCode
   created: DateQuery
   expected: DateQuery
   actual: DateQuery
@@ -51,24 +55,32 @@ function emptyFilters(): Filters {
     applicant: '',
     payeeKind: '',
     payeeId: '',
+    currency: '',
     created: { ...EMPTY_DATE_QUERY },
     expected: { ...EMPTY_DATE_QUERY },
     actual: { ...EMPTY_DATE_QUERY },
   }
 }
 
+function rowCurrency(row: StoredApplication) {
+  return row.overview?.currency || '臺幣TWD'
+}
+
 export function GeneralPaymentPage() {
   const navigate = useNavigate()
+  const { role } = useRole()
   const {
     applications,
     completePayment,
+    completePayments,
     voidApplication,
   } = useApplications()
   const [draft, setDraft] = useState<Filters>(emptyFilters)
   const [applied, setApplied] = useState<Filters>(emptyFilters)
   const [notice, setNotice] = useState('')
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [payTarget, setPayTarget] = useState<StoredApplication | null>(null)
-  const [auditApp, setAuditApp] = useState<StoredApplication | null>(null)
+  const [batchPayOpen, setBatchPayOpen] = useState(false)
 
   const rows = useMemo(() => {
     return applications.filter((row) => {
@@ -87,12 +99,29 @@ export function GeneralPaymentPage() {
       if (applied.payeeId && row.overview?.vendorId !== applied.payeeId) {
         return false
       }
+      if (applied.currency && rowCurrency(row) !== applied.currency) return false
       if (!matchDateQuery(row.createdAt, applied.created)) return false
       if (!matchDateQuery(row.expectedPaymentDate, applied.expected)) return false
       if (!matchDateQuery(row.actualPaymentDate, applied.actual)) return false
       return true
     })
   }, [applications, applied, draft.applicationNo])
+
+  const selectedRows = rows.filter((row) => selectedIds.includes(row.id))
+  const canBatchPay =
+    canCompletePayment(role) &&
+    selectedRows.length > 0 &&
+    selectedRows.every(
+      (row) => row.status === '待付款' && !completesOnApprove(row.paymentType),
+    )
+  const payModalTargets = payTarget ? [payTarget] : selectedRows
+  const payModalOpen = Boolean(payTarget) || batchPayOpen
+  const payModalNeedRate = payModalTargets.some((row) =>
+    isForeignCurrency(rowCurrency(row)),
+  )
+  const payModalCurrency = payModalTargets[0]
+    ? rowCurrency(payModalTargets[0])
+    : undefined
 
   const finishPay = (
     row: PaymentApplication,
@@ -106,6 +135,38 @@ export function GeneralPaymentPage() {
       return
     }
     setNotice(describeAction('pay', updated ?? row))
+  }
+
+  const finishBatchPay = (options: {
+    actualPaymentDate: string
+    exchangeRate?: number
+  }) => {
+    const paid = completePayments(
+      selectedRows.map((row) => row.id),
+      options,
+    )
+    const writeoffCount = paid.filter((row) =>
+      needsWriteoffHistory(row.paymentType),
+    ).length
+    if (writeoffCount) {
+      setNotice(
+        `已完成付款 ${paid.length} 筆。其中 ${writeoffCount} 筆為事後核銷，核銷歷史頁籤已出現。`,
+      )
+    } else {
+      setNotice(`已完成付款 ${paid.length} 筆`)
+    }
+    setSelectedIds([])
+  }
+
+  const handleBatchPay = () => {
+    if (!canBatchPay) return
+    const currencies = new Set(selectedRows.map(rowCurrency))
+    if (currencies.size !== 1) {
+      window.alert('需所有申請皆為相同幣別才可批量操作')
+      return
+    }
+    setPayTarget(null)
+    setBatchPayOpen(true)
   }
 
   const handleAction = (action: string, row: PaymentApplication) => {
@@ -128,12 +189,9 @@ export function GeneralPaymentPage() {
       }
       return
     }
-    if (action === 'auditFile') {
-      setAuditApp(applications.find((item) => item.id === row.id) ?? null)
-      return
-    }
     if (action === 'pay') {
       const app = applications.find((item) => item.id === row.id)
+      setBatchPayOpen(false)
       setPayTarget(app ?? null)
       return
     }
@@ -147,7 +205,8 @@ export function GeneralPaymentPage() {
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => navigate('/overview')}
+          disabled={role === '出納'}
+          onClick={() => role !== '出納' && navigate('/overview')}
         >
           新增付款申請
         </button>
@@ -213,6 +272,25 @@ export function GeneralPaymentPage() {
                 setDraft((prev) => ({ ...prev, applicant: e.target.value }))
               }
             />
+          </label>
+          <label>
+            付款幣別
+            <select
+              value={draft.currency}
+              onChange={(e) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  currency: e.target.value as Filters['currency'],
+                }))
+              }
+            >
+              <option value="">請選擇</option>
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
           </label>
           <div className="filter-payee">
             <span className="filter-label">付款對象</span>
@@ -308,6 +386,7 @@ export function GeneralPaymentPage() {
             onClick={() => {
               setDraft(emptyFilters())
               setApplied(emptyFilters())
+              setSelectedIds([])
               setNotice('')
             }}
           >
@@ -325,24 +404,39 @@ export function GeneralPaymentPage() {
 
       {notice && <div className="notice">{notice}</div>}
 
-      <div className="result-meta">共 {rows.length} 筆</div>
-      <ApplicationTable rows={rows} onAction={handleAction} />
-
-      {payTarget && (
-        <CompletePaymentModal
-          currency={payTarget.overview?.currency}
-          requireRate={isForeignCurrency(payTarget.overview?.currency)}
-          onClose={() => setPayTarget(null)}
-          onConfirm={(payload) => {
-            finishPay(payTarget, payload)
-            setPayTarget(null)
-          }}
-        />
+      {canBatchPay && (
+        <div className="result-toolbar">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleBatchPay}
+          >
+            批量完成付款
+          </button>
+        </div>
       )}
-      {auditApp && (
-        <AuditFileModal
-          file={auditApp.exportedFile ?? null}
-          onClose={() => setAuditApp(null)}
+      <div className="result-meta">共 {rows.length} 筆</div>
+      <ApplicationTable
+        rows={rows}
+        selectedIds={selectedIds}
+        onSelectedIdsChange={setSelectedIds}
+        onAction={handleAction}
+      />
+
+      {payModalOpen && (
+        <CompletePaymentModal
+          currency={payModalCurrency}
+          requireRate={payModalNeedRate}
+          onClose={() => {
+            setPayTarget(null)
+            setBatchPayOpen(false)
+          }}
+          onConfirm={(payload) => {
+            if (payTarget) finishPay(payTarget, payload)
+            else finishBatchPay(payload)
+            setPayTarget(null)
+            setBatchPayOpen(false)
+          }}
         />
       )}
     </div>

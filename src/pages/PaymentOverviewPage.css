@@ -2,6 +2,16 @@
   max-width: 920px;
 }
 
+.placeholder-note {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  background: #fafafa;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #8c8c8c;
+  line-height: 1.6;
+}
+
 .overview-page .page-header {
   display: flex;
   align-items: center;

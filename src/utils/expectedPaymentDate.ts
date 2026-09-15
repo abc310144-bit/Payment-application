@@ -1,5 +1,5 @@
 import type { PaymentDateRuleCategory, PaymentType } from '../types/payment'
-import { isChannelFeeType, PAYMENT_TYPE_META } from '../types/payment'
+import { isChannelFeeType, isUmMonthlyType, PAYMENT_TYPE_META } from '../types/payment'
 
 /** YYYY-MM-DD */
 export function formatDateISO(date: Date): string {
@@ -75,18 +75,63 @@ export function getPrepaymentDateRange(applicationDateISO: string): {
   }
 }
 
+/**
+ * URMART 月結預計付款日：
+ * 申請日 1–25：預設當月 25 日，可改為次月 25 日
+ * 申請日 ≥26：僅可選次月 25 日
+ */
+export function getUmExpectedDateRange(applicationDateISO: string): {
+  min: string
+  max: string
+  defaultDate: string
+} {
+  const date = parseISODate(applicationDateISO)
+  const thisMonth25 = formatDateISO(new Date(date.getFullYear(), date.getMonth(), 25))
+  const nextMonth25 = formatDateISO(
+    new Date(date.getFullYear(), date.getMonth() + 1, 25),
+  )
+  if (date.getDate() <= 25) {
+    return { min: thisMonth25, max: nextMonth25, defaultDate: thisMonth25 }
+  }
+  return { min: nextMonth25, max: nextMonth25, defaultDate: nextMonth25 }
+}
+
+/** 將候選日對齊到允許的當月／次月 25 日 */
+export function snapUmExpectedDate(
+  applicationDateISO: string,
+  candidate?: string,
+): string {
+  const { min, max, defaultDate } = getUmExpectedDateRange(applicationDateISO)
+  if (candidate && (candidate === min || candidate === max)) return candidate
+  if (candidate) {
+    const picked = parseISODate(candidate)
+    const snapped = formatDateISO(
+      new Date(picked.getFullYear(), picked.getMonth(), 25),
+    )
+    if (snapped === min || snapped === max) return snapped
+  }
+  return defaultDate
+}
+
 export function getRuleCategory(type: PaymentType): PaymentDateRuleCategory {
   return PAYMENT_TYPE_META[type].ruleCategory
 }
 
 /** 預計付款日是否可手動編輯 */
-export function isExpectedDateEditable(type: PaymentType): boolean {
-  return getRuleCategory(type) === '預付款'
+export function isExpectedDateEditable(
+  type: PaymentType,
+  applicationDateISO?: string,
+): boolean {
+  if (getRuleCategory(type) === '預付款') return true
+  if (isUmMonthlyType(type) && applicationDateISO) {
+    return parseISODate(applicationDateISO).getDate() <= 25
+  }
+  return false
 }
 
 /**
  * 依申請款項與申請日計算預計付款日
- * 通路費用不需預計付款日；月結規則待確認，暫依一般付款規則
+ * 通路費用不需預計付款日
  */
 export function calcExpectedPaymentDate(
   type: PaymentType,
@@ -95,6 +140,10 @@ export function calcExpectedPaymentDate(
 ): string {
   if (isChannelFeeType(type)) return ''
   if (!applicationDateISO) return ''
+
+  if (isUmMonthlyType(type)) {
+    return snapUmExpectedDate(applicationDateISO, currentExpected)
+  }
 
   const category = getRuleCategory(type)
 
@@ -114,15 +163,15 @@ export function calcExpectedPaymentDate(
 }
 
 export function getExpectedDateHint(type: PaymentType): string {
+  if (isUmMonthlyType(type)) {
+    return '目前類別「URMART 月結」：申請日 1–25 日預設當月 25 日，可改次月 25 日；26 日起僅可選次月 25 日。'
+  }
   const category = getRuleCategory(type)
   if (category === '零用金') {
     return '目前類別「零用金」：自動帶入下週四（不可手動修改）。'
   }
   if (category === '預付款') {
     return '目前類別「預付款」：預設申請日，可於申請日起 5 日內（含）調整。'
-  }
-  if (category === '待確認') {
-    return '目前類別「URMART 月結」規則待確認，暫依一般付款截止規則自動帶入（不可手動修改）。'
   }
   return '目前類別「一般」：依每月截止規則自動帶入（不可手動修改）。'
 }

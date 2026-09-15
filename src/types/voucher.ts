@@ -139,6 +139,7 @@ export function canAddVoucherDetail(
   role: UserRole,
   appStatus: string,
 ) {
+  if (role === '出納') return false
   if (role === '建檔人') {
     return appStatus === '草稿' || appStatus === '審核不通過'
   }
@@ -149,7 +150,7 @@ export function canAddVoucherDetail(
   )
 }
 
-/** 導出前（草稿）：建檔人／財務皆可檢視、編輯、作廢；導出後僅財務可編輯、作廢 */
+/** 導出前（草稿）：建檔人／財務皆可檢視、編輯、作廢；導出後僅財務可編輯、作廢。出納僅可檢視。 */
 export function getVoucherRowOps(
   role: UserRole,
   status: VoucherDetailStatus,
@@ -157,6 +158,7 @@ export function getVoucherRowOps(
   const view = { key: 'view' as const, label: '檢視' }
   const edit = { key: 'edit' as const, label: '編輯' }
   const voidOp = { key: 'void' as const, label: '作廢' }
+  if (role === '出納') return [view]
   if (status === '草稿') return [view, edit, voidOp]
   if (role === '財務' && (status === '待審核' || status === '審核通過')) {
     return [view, edit, voidOp]

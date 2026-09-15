@@ -23,16 +23,12 @@ import {
   type PaymentType,
   type RemittanceFeeBearer,
 } from '../types/payment'
-import {
-  monthlyVendorLabel,
-  type MonthlySummaryImport,
-} from '../types/monthlySettlement'
-import { parseMonthlySummaryWorkbook } from '../utils/parseMonthlySummary'
-import { buildMockVendorSettlement } from '../utils/mockVendorSettlement'
+import { lookupMockUmSettlement } from '../utils/mockVendorSettlement'
 import {
   calcExpectedPaymentDate,
   getExpectedDateHint,
   getPrepaymentDateRange,
+  getUmExpectedDateRange,
   isExpectedDateEditable,
   todayISO,
 } from '../utils/expectedPaymentDate'
@@ -47,11 +43,26 @@ type FieldErrors = Partial<
     | 'currency'
     | 'paymentMethod'
     | 'remittanceFee'
-    | 'expectedPaymentDate'
-    | 'monthlyImport',
+    | 'expectedPaymentDate',
     string
   >
 >
+
+function applyUmSettlement(next: PaymentOverviewForm) {
+  if (!isUmMonthlyType(next.paymentType)) return
+  next.currency = '臺幣TWD'
+  if (next.vendorId && next.settlementMonth) {
+    const vendor = mockVendors.find((item) => item.id === next.vendorId)
+    const totals = lookupMockUmSettlement(next.vendorId, next.settlementMonth)
+    next.monthlyTotals = totals
+    next.totalAmount = totals?.companyInvoiceAmount ?? null
+    next.vendorName = vendor?.name ?? ''
+    next.vendorTaxId = vendor?.taxId ?? ''
+  } else {
+    next.monthlyTotals = null
+    next.totalAmount = null
+  }
+}
 
 export function buildInitialOverviewForm(): PaymentOverviewForm {
   const paymentType: PaymentType = '個人代墊報支'
@@ -95,44 +106,15 @@ export function OverviewForm({
   const [errors, setErrors] = useState<FieldErrors>({})
   const [submitted, setSubmitted] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [importing, setImporting] = useState(false)
-  const [importNotice, setImportNotice] = useState('')
-  const [imported, setImported] = useState<MonthlySummaryImport | null>(() => {
-    if (!initial || !isUmMonthlyType(initial.paymentType) || !initial.vendorId) {
-      return null
-    }
-    return {
-      month: initial.settlementMonth,
-      sheetName: initial.settlementMonth,
-      vendors: [
-        {
-          key: initial.vendorId,
-          name: initial.vendorName || '已選廠商',
-          taxId: initial.vendorTaxId || '',
-          cooperationMode: initial.cooperationMode || '',
-          salesTotal: initial.monthlyTotals?.salesTotal ?? 0,
-          commission: initial.monthlyTotals?.commission ?? 0,
-          platformFee: initial.monthlyTotals?.platformFee ?? 0,
-          paymentProcessingFee: initial.monthlyTotals?.paymentProcessingFee ?? 0,
-          marketingFee: initial.monthlyTotals?.marketingFee ?? 0,
-          eventFee: initial.monthlyTotals?.eventFee ?? 0,
-          logisticsFee: initial.monthlyTotals?.logisticsFee ?? 0,
-          laborFee: initial.monthlyTotals?.laborFee ?? 0,
-          warehouseTotal: initial.monthlyTotals?.warehouseTotal ?? 0,
-          absorption: initial.monthlyTotals?.adjustment ?? 0,
-          specialFee: 0,
-        },
-      ],
-    }
-  })
 
   const meta = PAYMENT_TYPE_META[form.paymentType]
   const needsSettlement = meta.needsSettlementMonth
-  const expectedEditable = isExpectedDateEditable(form.paymentType) && !readOnly
   const onlyRemittance = isPettyCashType(form.paymentType)
   const umMonthly = isUmMonthlyType(form.paymentType)
   const channelFee = isChannelFeeType(form.paymentType)
   const locked = readOnly
+  const expectedEditable =
+    isExpectedDateEditable(form.paymentType, form.applicationDate) && !readOnly
   const payeeItems = useMemo(() => {
     if (onlyRemittance) {
       return mockEmployees.map((emp) => ({
@@ -141,29 +123,24 @@ export function OverviewForm({
         name: `${emp.name}（${emp.account}）`,
       }))
     }
-    if (umMonthly) {
-      return (imported?.vendors ?? []).map((vendor) => ({
-        id: vendor.key,
-        code: vendor.taxId || '-',
-        name: monthlyVendorLabel(vendor),
-      }))
-    }
     return mockVendors.map((vendor) => ({
       id: vendor.id,
       code: vendor.code,
       name: vendor.name,
     }))
-  }, [onlyRemittance, umMonthly, imported])
+  }, [onlyRemittance])
 
   const paymentMethodOptions = useMemo(
     () => (onlyRemittance ? (['匯款'] as PaymentMethod[]) : PAYMENT_METHODS),
     [onlyRemittance],
   )
 
-  const prepayRange = useMemo(() => {
-    if (!expectedEditable || !form.applicationDate) return null
-    return getPrepaymentDateRange(form.applicationDate)
-  }, [expectedEditable, form.applicationDate])
+  const expectedRange = useMemo(() => {
+    if (!form.applicationDate) return null
+    if (umMonthly) return getUmExpectedDateRange(form.applicationDate)
+    if (expectedEditable) return getPrepaymentDateRange(form.applicationDate)
+    return null
+  }, [expectedEditable, form.applicationDate, umMonthly])
 
   const patch = (partial: Partial<PaymentOverviewForm>) => {
     if (locked) return
@@ -177,13 +154,15 @@ export function OverviewForm({
           next.settlementMonth = ''
         }
         if (isUmMonthlyType(partial.paymentType)) {
-          next.vendorId = ''
-          next.vendorName = ''
-          next.vendorTaxId = ''
+          next.currency = '臺幣TWD'
           next.cooperationMode = ''
-          next.monthlyTotals = null
-          next.totalAmount = null
-          next.settlementMonth = ''
+          if (next.vendorId.startsWith('um:')) {
+            next.vendorId = ''
+            next.vendorName = ''
+            next.vendorTaxId = ''
+            next.monthlyTotals = null
+            next.totalAmount = null
+          }
         } else {
           next.vendorName = ''
           next.vendorTaxId = ''
@@ -202,10 +181,10 @@ export function OverviewForm({
           if (isEmployeeOnly && !isVendor) next.vendorId = ''
           if (next.vendorId.startsWith('um:')) next.vendorId = ''
         }
+        applyUmSettlement(next)
         next.expectedPaymentDate = calcExpectedPaymentDate(
           next.paymentType,
           next.applicationDate,
-          next.expectedPaymentDate,
         )
       }
 
@@ -213,72 +192,31 @@ export function OverviewForm({
         next.expectedPaymentDate = calcExpectedPaymentDate(
           next.paymentType,
           next.applicationDate,
-          isExpectedDateEditable(next.paymentType)
-            ? next.expectedPaymentDate
-            : undefined,
+          next.expectedPaymentDate,
+        )
+      }
+
+      if (
+        partial.vendorId !== undefined ||
+        partial.settlementMonth !== undefined
+      ) {
+        applyUmSettlement(next)
+      }
+
+      if (
+        partial.expectedPaymentDate !== undefined &&
+        isUmMonthlyType(next.paymentType) &&
+        next.applicationDate
+      ) {
+        next.expectedPaymentDate = calcExpectedPaymentDate(
+          next.paymentType,
+          next.applicationDate,
+          next.expectedPaymentDate,
         )
       }
 
       return next
     })
-    if (partial.paymentType !== undefined && !isUmMonthlyType(partial.paymentType)) {
-      setImported(null)
-      setImportNotice('')
-    }
-  }
-
-  const applyVendor = (vendorKey: string) => {
-    const row = imported?.vendors.find((item) => item.key === vendorKey)
-    if (!row) {
-      patch({
-        vendorId: vendorKey,
-        vendorName: '',
-        vendorTaxId: '',
-        cooperationMode: '',
-        monthlyTotals: null,
-        totalAmount: null,
-      })
-      return
-    }
-    const totals = buildMockVendorSettlement(row)
-    patch({
-      vendorId: row.key,
-      vendorName: monthlyVendorLabel(row),
-      vendorTaxId: row.taxId,
-      cooperationMode: row.cooperationMode,
-      monthlyTotals: totals,
-      totalAmount: totals.companyInvoiceAmount,
-    })
-  }
-
-  const handleImportFile = async (file: File | undefined) => {
-    if (!file || locked) return
-    setImporting(true)
-    setImportNotice('')
-    try {
-      const buffer = await file.arrayBuffer()
-      const result = parseMonthlySummaryWorkbook(buffer)
-      setImported(result)
-      patch({
-        settlementMonth: result.month,
-        vendorId: '',
-        vendorName: '',
-        vendorTaxId: '',
-        cooperationMode: '',
-        monthlyTotals: null,
-        totalAmount: null,
-      })
-      setImportNotice(
-        `已使用最新月份「${result.month}」，共 ${result.vendors.length} 筆廠商（同一廠商不同合作模式會分開列出）。`,
-      )
-    } catch (error) {
-      setImported(null)
-      setImportNotice('')
-      const message = error instanceof Error ? error.message : '匯入失敗'
-      setErrors((prev) => ({ ...prev, monthlyImport: message }))
-    } finally {
-      setImporting(false)
-    }
   }
 
   const validate = (): FieldErrors => {
@@ -287,9 +225,6 @@ export function OverviewForm({
     if (needsSettlement && !form.settlementMonth) {
       next.settlementMonth = '必填'
     }
-    if (umMonthly && !imported) {
-      next.monthlyImport = '請先匯入月結總結表'
-    }
     if (!form.applicationDate) next.applicationDate = '必填'
     if (!form.vendorId) next.vendorId = '必填'
     if (!form.currency) next.currency = '必填'
@@ -297,14 +232,18 @@ export function OverviewForm({
     if (!form.remittanceFee) next.remittanceFee = '必填'
     if (!channelFee && !form.expectedPaymentDate) next.expectedPaymentDate = '必填'
 
-    if (
-      isExpectedDateEditable(form.paymentType) &&
-      form.applicationDate &&
-      form.expectedPaymentDate
-    ) {
-      const { min, max } = getPrepaymentDateRange(form.applicationDate)
-      if (form.expectedPaymentDate < min || form.expectedPaymentDate > max) {
-        next.expectedPaymentDate = `須介於 ${min} ~ ${max}`
+    if (form.applicationDate && form.expectedPaymentDate) {
+      if (umMonthly) {
+        const { min, max } = getUmExpectedDateRange(form.applicationDate)
+        if (form.expectedPaymentDate !== min && form.expectedPaymentDate !== max) {
+          next.expectedPaymentDate =
+            min === max ? `僅可選 ${min}` : `須為 ${min} 或 ${max}`
+        }
+      } else if (isExpectedDateEditable(form.paymentType, form.applicationDate)) {
+        const { min, max } = getPrepaymentDateRange(form.applicationDate)
+        if (form.expectedPaymentDate < min || form.expectedPaymentDate > max) {
+          next.expectedPaymentDate = `須介於 ${min} ~ ${max}`
+        }
       }
     }
 
@@ -320,6 +259,7 @@ export function OverviewForm({
     if (Object.keys(nextErrors).length > 0) return
     onSubmit({
       ...form,
+      currency: umMonthly ? '臺幣TWD' : form.currency,
       expectedPaymentDate: channelFee ? '' : form.expectedPaymentDate,
     })
     setSaved(true)
@@ -369,34 +309,6 @@ export function OverviewForm({
             </div>
           </div>
 
-          {umMonthly && (
-            <div className="form-row">
-              <label className="form-label required">匯入月結報表</label>
-              <div className="form-control">
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  disabled={locked || importing}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    e.target.value = ''
-                    void handleImportFile(file)
-                  }}
-                />
-                <p className="field-hint">
-                  選擇 URMART 月結廠商後匯入月結總結表。系統自動使用最新
-                  YYYY-MM 分頁。範例檔：
-                  <a href="/samples/月結總結表.xlsx">月結總結表.xlsx</a>
-                </p>
-                {importing && <p className="field-hint">匯入中…</p>}
-                {importNotice && <p className="field-hint">{importNotice}</p>}
-                {showError('monthlyImport') && (
-                  <p className="field-error">{errors.monthlyImport}</p>
-                )}
-              </div>
-            </div>
-          )}
-
           {needsSettlement && (
             <div className="form-row">
               <label className="form-label required" htmlFor="settlementMonth">
@@ -407,13 +319,13 @@ export function OverviewForm({
                   id="settlementMonth"
                   type="month"
                   value={form.settlementMonth}
-                  disabled={locked || umMonthly}
+                  disabled={locked}
                   className={showError('settlementMonth') ? 'error' : undefined}
                   onChange={(e) => patch({ settlementMonth: e.target.value })}
                 />
                 <p className="field-hint">
                   {umMonthly
-                    ? '由匯入的月結總結表最新月份自動帶入，不可手改。'
+                    ? '可自選結算月。設定後，新增發票將自動帶入款項用途與結算月，並依廠商帶入該月月結金額。'
                     : '設定後，新增明細將自動帶入款項用途以及結算月。'}
                 </p>
                 {showError('settlementMonth') && (
@@ -457,34 +369,18 @@ export function OverviewForm({
               <VendorSelect
                 items={payeeItems}
                 value={form.vendorId}
-                disabled={locked || (umMonthly && !imported)}
+                disabled={locked}
                 error={showError('vendorId')}
                 placeholder={
                   onlyRemittance
                     ? '搜尋或選擇員工'
-                    : umMonthly
-                      ? imported
-                        ? '搜尋廠商名稱、統編或合作模式'
-                        : '請先匯入月結報表'
-                      : '搜尋或選擇付款對象（資料來自廠商列表）'
+                    : '搜尋或選擇付款對象（資料來自廠商列表）'
                 }
-                emptyText={
-                  onlyRemittance
-                    ? '查無員工'
-                    : umMonthly
-                      ? '查無此結算月廠商'
-                      : '查無付款對象'
-                }
+                emptyText={onlyRemittance ? '查無員工' : '查無付款對象'}
                 searchPlaceholder={
-                  onlyRemittance
-                    ? '搜尋姓名、帳號或編號'
-                    : umMonthly
-                      ? '模糊搜尋廠商、統編、合作模式'
-                      : '搜尋編號或名稱'
+                  onlyRemittance ? '搜尋姓名、帳號或編號' : '搜尋編號或名稱'
                 }
-                onChange={(vendorId) =>
-                  umMonthly ? applyVendor(vendorId) : patch({ vendorId })
-                }
+                onChange={(vendorId) => patch({ vendorId })}
               />
               {onlyRemittance && (
                 <p className="field-hint">
@@ -493,7 +389,7 @@ export function OverviewForm({
               )}
               {umMonthly && (
                 <p className="field-hint">
-                  僅能選擇最新月份報表中的廠商。同一廠商若有兩種合作模式，會顯示成兩筆。
+                  選完廠商與結算月後，系統帶入該月月結金額（DEMO 為假資料，正式環境由資料庫查詢）。
                 </p>
               )}
               {showError('vendorId') && (
@@ -509,8 +405,8 @@ export function OverviewForm({
             <div className="form-control">
               <select
                 id="currency"
-                value={form.currency}
-                disabled={locked}
+                value={umMonthly ? '臺幣TWD' : form.currency}
+                disabled={locked || umMonthly}
                 onChange={(e) =>
                   patch({ currency: e.target.value as CurrencyCode })
                 }
@@ -521,6 +417,9 @@ export function OverviewForm({
                   </option>
                 ))}
               </select>
+              {umMonthly && (
+                <p className="field-hint">月結金額為臺幣，付款幣別不可變更。</p>
+              )}
             </div>
           </div>
 
@@ -595,7 +494,7 @@ export function OverviewForm({
               />
               {umMonthly && (
                 <p className="field-hint">
-                  帶入「貴公司開立發票金額(含稅)」。選完廠商後由月結資料帶入。
+                  帶入「貴公司開立發票金額(含稅)」。選完廠商與結算月後由月結資料帶入，不可編輯。
                 </p>
               )}
             </div>
@@ -612,8 +511,8 @@ export function OverviewForm({
                 type="date"
                 value={form.expectedPaymentDate}
                 disabled={!expectedEditable}
-                min={prepayRange?.min}
-                max={prepayRange?.max}
+                min={expectedRange?.min}
+                max={expectedRange?.max}
                 className={
                   showError('expectedPaymentDate') ? 'error' : undefined
                 }
@@ -647,7 +546,7 @@ export function OverviewForm({
                   </li>
                   <li>
                     <strong>URMART 月結：</strong>
-                    規則待確認（原型暫依一般付款規則）。
+                    申請日 1–25 日預設當月 25 日，可改為次月 25 日；26 日起僅可選次月 25 日。
                   </li>
                 </ul>
                 <div className="rule-footer">

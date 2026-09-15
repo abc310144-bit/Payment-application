@@ -80,6 +80,9 @@
     th { background: #fafafa; color: #595959; }
     .mono { font-family: Consolas, monospace; color: #1677ff; }
     .num { text-align: right; }
+    .check-col { width: 40px; text-align: center; padding-left: 10px; padding-right: 10px; }
+    .check-col input { width: 16px; height: 16px; margin: 0; cursor: pointer; }
+    .result-toolbar { margin-bottom: 8px; }
     .ops { display: flex; flex-wrap: wrap; gap: 4px; min-width: 300px; }
     .status { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
     .status-草稿 { background: #f0f0f0; color: #595959; }
@@ -143,6 +146,25 @@
     .details-table .num { text-align:right; }
     .details-ops button { border:none; background:transparent; color:#2b5cff; cursor:pointer; padding:0; margin-right:8px; }
     .details-ops button:disabled { color:#bfbfbf; cursor:not-allowed; }
+    .details-foot { margin:12px 0 0; font-size:12px; color:#8c8c8c; line-height:1.6; }
+    .monthly-settlement { margin:0 0 16px; padding:16px; border:1px solid #e8e8e8; border-radius:8px; background:#fafcff; }
+    .monthly-title { margin:0 0 12px; font-size:14px; font-weight:700; }
+    .monthly-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px 20px; margin:0; }
+    .monthly-item { display:grid; grid-template-columns:minmax(0, 1.2fr) minmax(0, 1fr); gap:8px; align-items:center; }
+    .monthly-item dt { margin:0; font-size:13px; color:#595959; }
+    .monthly-item dd { margin:0; font-size:13px; text-align:right; font-variant-numeric:tabular-nums; color:#1f1f1f; }
+    .invoice-match { margin-top:12px; padding:12px 14px; border-radius:6px; font-size:13px; line-height:1.55; display:flex; flex-direction:column; gap:10px; }
+    .invoice-match.is-ok { background:#e8f5e9; border:1px solid #a5d6a7; color:#1b5e20; }
+    .invoice-match.is-bad { background:#ffebee; border:1px solid #ef9a9a; color:#c62828; }
+    .invoice-match-amounts { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px 20px; }
+    .invoice-match-row { display:flex; flex-direction:column; gap:4px; min-width:0; }
+    .invoice-match-row span { font-size:12px; opacity:0.88; }
+    .invoice-match-row strong { font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .invoice-match-status { margin:0; font-size:13px; font-weight:600; }
+    @media (max-width:720px) {
+      .monthly-grid { grid-template-columns:1fr; }
+      .invoice-match-amounts { grid-template-columns:1fr; }
+    }
     .writeoff-panel { background:#fff; border:1px solid #e8e8e8; border-radius:8px; padding:16px 20px 20px; }
     .writeoff-summary { margin:0 0 14px; font-size:14px; }
     .writeoff-table { width:100%; border-collapse:collapse; font-size:13px; }
@@ -221,6 +243,7 @@
           <div class="role-tabs">
             <button class="role-tab active" data-role="建檔人">建檔人</button>
             <button class="role-tab" data-role="財務">財務</button>
+            <button class="role-tab" data-role="出納">出納</button>
           </div>
         </div>
       </header>
@@ -231,12 +254,47 @@
 <script>
 const TYPES = ['個人代墊報支','廠商實報實銷','廠商預付 / 訂金','通路費用 (通路後扣)','URMART 月結廠商']
 const STATUSES = ['草稿','待審核','審核不通過','待付款','待核銷','部分核銷','已完成','已作廢']
+const CURRENCIES = ['臺幣TWD','美元USD','英镑GBP','澳元AUD','人民幣CNY','歐元EUR','港幣HK']
+function completesOnApprove(type){ return type === '通路費用 (通路後扣)' }
 const META = {
   '個人代墊報支': { title: '個人代墊報支（零用金）', desc: '我已先用個人款項墊付餐費、車資、雜支等，請公司退款至我的薪資帳戶。', petty: true },
   '廠商實報實銷': { title: '廠商實報實銷（一般付款）', desc: '已取得廠商開立的正式發票或收據，請公司直接匯款給該廠商。' },
   '廠商預付 / 訂金': { title: '廠商預付 / 訂金（預付款）', desc: '目前僅有合約或報價單，需先申請款項支付給廠商，事後再補發票核銷。', prepay: true },
   '通路費用 (通路後扣)': { title: '通路費用（通路後扣）', desc: '文案說明待確認。選擇此項並設定結算月後，新增明細將自動帶入款項用途以及結算月。', settlement: true },
-  'URMART 月結廠商': { title: 'URMART 月結廠商', desc: '文案說明待確認。選擇此項並設定結算月後，新增明細將自動帶入款項用途以及結算月。', settlement: true },
+  'URMART 月結廠商': { title: 'URMART 月結廠商', desc: '自選結算月與廠商後，系統帶入該月月結金額（固定臺幣）。新增發票將自動帶入款項用途與結算月；發票加總須與貴公司開立發票金額相差在 ±3 元以內才可導出／送審。', settlement: true },
+}
+function isUmType(type){ return type === 'URMART 月結廠商' }
+function hashKey(value){
+  let hash = 2166136261
+  for (let i = 0; i < String(value).length; i++) {
+    hash ^= String(value).charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+function lookupMockUmSettlement(vendorId, month){
+  if (!vendorId || !month) return null
+  const company = 8000 + (hashKey(vendorId + '|' + month) % 15001)
+  const salesUntaxed = Math.round(company / 1.05)
+  const vat = company - salesUntaxed
+  const commission = Math.round(company * 0.08)
+  const platformFee = 300, paymentProcessingFee = 150, marketingFee = 200, eventFee = 0, logisticsFee = 400, laborFee = 100, warehouseTotal = 250, adjustment = 0
+  const payoutAmount = company - commission - platformFee - paymentProcessingFee - marketingFee - eventFee - logisticsFee - laborFee - warehouseTotal - adjustment
+  return { salesTotal: company, commission, platformFee, paymentProcessingFee, marketingFee, eventFee, logisticsFee, laborFee, warehouseTotal, adjustment, payoutAmount, salesUntaxed, vat, companyInvoiceAmount: company }
+}
+const MONTHLY_FIELDS = [
+  ['salesTotal','銷售額加總'],['commission','總抽成金額'],['platformFee','平台維護費'],['paymentProcessingFee','金流處理費'],
+  ['marketingFee','行銷推廣費'],['eventFee','活動贊助費'],['logisticsFee','物流分攤費'],['laborFee','人工處理費'],
+  ['warehouseTotal','倉庫加總'],['adjustment','報表調整項目'],['payoutAmount','撥款金額'],['salesUntaxed','銷售額合計'],
+  ['vat','營業稅(未稅*5%)'],['companyInvoiceAmount','貴公司開立發票金額(含稅)'],
+]
+function invoiceSumMatchesTarget(sum, target){
+  return Math.abs(roundMoney(sum) - roundMoney(target)) <= 3
+}
+function invoiceSumHint(sum, target){
+  return invoiceSumMatchesTarget(sum, target)
+    ? '發票加總與貴公司開立發票金額相差在 ±3 元以內，可導出／送審。'
+    : '發票加總與貴公司開立發票金額相差超過 ±3 元，請調整發票後再導出／送審。'
 }
 const VENDORS = [
   { id: 'v1', code: 'V0001', name: '台灣優瑪特股份有限公司', taxId: '24536815' },
@@ -280,11 +338,11 @@ const ROWS = [
   { id:'1', no:'PA20260724001', type:'個人代墊報支', applicant:'王小明', details:3, amount:2450, created:'2026-07-20 09:12:00', expected:null, actual:null, reason:null, status:'草稿' },
   { id:'2', no:'PA20260724002', type:'廠商預付 / 訂金', applicant:'陳美玲', details:1, amount:50000, created:'2026-07-18 14:30:00', expected:null, actual:null, reason:'發票抬頭與公司名稱不符，請重新確認後再送審', status:'審核不通過' },
   { id:'3', no:'PA20260723015', type:'廠商實報實銷', applicant:'林志偉', details:5, amount:12800, created:'2026-07-16 11:05:00', expected:null, actual:null, reason:null, status:'待審核' },
-  { id:'4', no:'PA20260722008', type:'通路費用 (通路後扣)', applicant:'黃雅婷', details:2, amount:86000, created:'2026-07-15 16:40:00', expected:'2026-07-30', actual:null, reason:null, status:'待付款' },
+  { id:'4', no:'PA20260722008', type:'通路費用 (通路後扣)', applicant:'黃雅婷', details:2, amount:86000, created:'2026-07-15 16:40:00', expected:'2026-07-30', actual:null, reason:null, status:'待審核' },
   { id:'5', no:'PA20260721021', type:'廠商預付 / 訂金', applicant:'王小明', details:1, amount:120000, created:'2026-07-12 10:22:00', expected:'2026-07-15', actual:'2026-07-15', reason:null, status:'待核銷' },
   { id:'6', no:'PA20260710007', type:'廠商預付 / 訂金', applicant:'陳美玲', details:2, amount:98000, created:'2026-07-08 09:50:00', expected:'2026-07-10', actual:'2026-07-10', reason:null, status:'部分核銷' },
   { id:'7', no:'PA20260628003', type:'個人代墊報支', applicant:'張庭瑜', details:4, amount:3180, created:'2026-06-28 13:18:00', expected:'2026-07-02', actual:'2026-07-02', reason:null, status:'已完成' },
-  { id:'8', no:'PA20260719011', type:'URMART 月結廠商', applicant:'林志偉', details:8, amount:256400, created:'2026-07-19 08:33:00', expected:'2026-07-30', actual:null, reason:null, status:'待付款' },
+  { id:'8', no:'PA20260719011', type:'URMART 月結廠商', applicant:'林志偉', details:8, amount:256400, created:'2026-07-19 08:33:00', expected:'2026-07-25', actual:null, reason:null, status:'待付款' },
   { id:'9', no:'PA20260717004', type:'廠商實報實銷', applicant:'黃雅婷', details:2, amount:6420, created:'2026-07-17 17:02:00', expected:null, actual:null, reason:null, status:'待審核' },
   { id:'10', no:'PA20260705019', type:'通路費用 (通路後扣)', applicant:'張庭瑜', details:3, amount:45200, created:'2026-07-05 15:27:00', expected:'2026-07-15', actual:'2026-07-15', reason:'請補上傳對帳單後再送審', status:'已完成' },
   { id:'11', no:'PA20260725030', type:'廠商預付 / 訂金', applicant:'王小明', details:1, amount:30000, created:'2026-07-22 10:00:00', expected:'2026-07-25', actual:null, reason:null, status:'待付款' },
@@ -396,26 +454,35 @@ ROWS.forEach((r, i) => {
       vendor: vendorId,
       type: r.type,
       month: (r.type.indexOf('通路') >= 0 || r.type.indexOf('月結') >= 0) ? '2026-07' : '',
-      currency: (r.id === '8' || r.id === '11') ? '美元USD' : '臺幣TWD',
+      currency: r.id === '11' ? '美元USD' : '臺幣TWD',
       vendorName: payeeDisplayName(vendorId, r.type),
     }
+  }
+  if (isUmType(r.type)) {
+    r.overview.currency = '臺幣TWD'
+    r.overview.month = r.overview.month || '2026-07'
+    r.overview.monthlyTotals = lookupMockUmSettlement(r.overview.vendor, r.overview.month)
+    if (r.overview.monthlyTotals) r.amount = r.overview.monthlyTotals.companyInvoiceAmount
+    r.expected = '2026-07-25'
   }
   if ((r.id === '8' || r.id === '11') && !r.vouchers.length) {
     r.vouchers = [seedDemoVoucher(r, r.id === '11' ? '預付訂金' : '月結貨款')]
   }
 })
 function canEdit(role, status){
+  if (role === '出納') return false
   if (status === '已作廢' || status === '已完成') return false
   if (role === '財務') return true
-  return status === '草稿' || status === '審核不通過'
+  if (role === '建檔人') return status === '草稿' || status === '審核不通過'
+  return false
 }
 function getRowOps(role, status, type){
   const canEditNow = canEdit(role, status)
-  const canVoid = status !== '已完成' && status !== '已作廢' && (role === '財務' || status === '草稿' || status === '審核不通過')
+  const canVoid = role !== '出納' && status !== '已完成' && status !== '已作廢' && (role === '財務' || status === '草稿' || status === '審核不通過')
   const canReview = role === '財務' && status === '待審核'
   const canWriteoff = role === '建檔人' && needsWriteoff(type) && (status === '待核銷' || status === '部分核銷')
-  const canPay = role === '財務' && status === '待付款'
-  const ops = [
+  const canPay = role === '出納' && status === '待付款' && !completesOnApprove(type)
+  return [
     ['edit','編輯', !canEditNow],
     ['view','檢視', false],
     ['void','作廢', !canVoid],
@@ -423,8 +490,6 @@ function getRowOps(role, status, type){
     ['writeoff','進行核銷', !canWriteoff],
     ['pay','完成付款', !canPay],
   ]
-  if (status === '已完成') ops.push(['auditFile','檢視審核檔案', false])
-  return ops
 }
 
 const state = {
@@ -447,11 +512,13 @@ const state = {
   rejectReason: '',
   rejectError: '',
   payOpen: false,
+  batchPayOpen: false,
   payTargetId: '',
   payRate: '',
   payDate: '',
   payDateError: '',
   payError: '',
+  selectedIds: {},
   payeeOpen: false,
   payeeKeyword: '',
   datePicker: null,
@@ -459,7 +526,7 @@ const state = {
   filterPayeeKeyword: '',
   auditOpen: false,
   auditTargetId: '',
-  filters: { no:'', type:'', status:'', applicant:'', payeeKind:'', payeeId:'', createdFrom:'', createdTo:'', expectedFrom:'', expectedTo:'', actualFrom:'', actualTo:'' },
+  filters: { no:'', type:'', status:'', applicant:'', currency:'', payeeKind:'', payeeId:'', createdFrom:'', createdTo:'', expectedFrom:'', expectedTo:'', actualFrom:'', actualTo:'' },
   overview: null,
 }
 
@@ -587,10 +654,12 @@ function remarkNo(purpose, text, from, to){
   return (text || '').trim() || '-'
 }
 function canAddVoucher(role, status){
+  if (role === '出納') return false
   if (role === '建檔人') return status === '草稿' || status === '審核不通過'
   return status === '草稿' || status === '審核不通過' || status === '待審核'
 }
 function voucherOps(role, status){
+  if (role === '出納') return [['view','檢視']]
   if (status === '草稿') return [['view','檢視'],['edit','編輯'],['void','作廢']]
   if (role === '財務' && (status === '待審核' || status === '審核通過')) return [['view','檢視'],['edit','編輯'],['void','作廢']]
   return [['view','檢視']]
@@ -659,7 +728,11 @@ function emptyDraft(row, existing){
 }
 function refreshRowTotals(row){
   row.details = row.vouchers.length
-  row.amount = sumAmounts((row.vouchers || []).map((item) => item.payAmount))
+  if (isUmType(row.type) && row.overview && row.overview.monthlyTotals) {
+    row.amount = row.overview.monthlyTotals.companyInvoiceAmount
+  } else {
+    row.amount = sumAmounts((row.vouchers || []).map((item) => item.payAmount))
+  }
 }
 function loadScript(src){
   return new Promise((resolve, reject) => {
@@ -989,15 +1062,18 @@ function formFromRow(row){
   const o = row.overview || {}
   const type = o.type || row.type
   const date = o.date || row.created.slice(0,10)
+  const vendor = o.vendor || (isPettyType(type) ? findEmployeeForApplicant(row.applicant || 'ruby.lee').id : '')
+  const month = o.month || ''
   return {
     type,
-    month: o.month || '',
+    month,
     date,
-    vendor: o.vendor || (isPettyType(type) ? findEmployeeForApplicant(row.applicant || 'ruby.lee').id : ''),
-    currency: o.currency || '臺幣TWD',
+    vendor,
+    currency: isUmType(type) ? '臺幣TWD' : (o.currency || '臺幣TWD'),
     method: o.method || '匯款',
     fee: o.fee || '公司負擔',
     expected: o.expected || row.expected || expectedFor(type, date),
+    monthlyTotals: o.monthlyTotals || (isUmType(type) ? lookupMockUmSettlement(vendor, month) : null),
   }
 }
 
@@ -1153,16 +1229,23 @@ function renderList(){
     if (f.type && r.type !== f.type) return false
     if (f.status && r.status !== f.status) return false
     if (f.applicant && !r.applicant.includes(f.applicant.trim())) return false
+    if (f.currency && rowCurrency(r) !== f.currency) return false
     if (f.payeeId && rowPayeeId(r) !== f.payeeId) return false
     if (!matchDateQuery(r.created, f.createdFrom, f.createdTo)) return false
     if (!matchDateQuery(r.expected, f.expectedFrom, f.expectedTo)) return false
     if (!matchDateQuery(r.actual, f.actualFrom, f.actualTo)) return false
     return true
   })
+  const visibleIds = rows.map((r) => r.id)
+  Object.keys(state.selectedIds).forEach((id) => {
+    if (!visibleIds.includes(id)) delete state.selectedIds[id]
+  })
+  const selectedRows = rows.filter((r) => state.selectedIds[r.id])
+  const canBatchPay = state.role === '出納' && selectedRows.length > 0 && selectedRows.every((r) => r.status === '待付款' && !completesOnApprove(r.type))
   return `
     <div class="page-header">
       <h1>一般付款</h1>
-      <button class="btn btn-primary" id="btn-new">新增付款申請</button>
+      <button class="btn btn-primary" id="btn-new"${state.role === '出納' ? ' disabled' : ''}>新增付款申請</button>
     </div>
     <section class="filter-card">
       <div class="filter-grid">
@@ -1174,6 +1257,9 @@ function renderList(){
           <select id="f-status"><option value="">請選擇</option>${STATUSES.map(s=>`<option ${f.status===s?'selected':''}>${s}</option>`).join('')}</select>
         </label>
         <label>申請人<input id="f-applicant" value="${f.applicant}" placeholder="模糊查詢"></label>
+        <label>付款幣別
+          <select id="f-currency"><option value="">請選擇</option>${CURRENCIES.map(c=>`<option ${f.currency===c?'selected':''}>${c}</option>`).join('')}</select>
+        </label>
         ${renderFilterPayee(f)}
         ${renderDateModeField('建立日', 'created', f)}
         ${renderDateModeField('預計付款日', 'expected', f)}
@@ -1185,19 +1271,24 @@ function renderList(){
       </div>
     </section>
     ${state.notice ? `<div class="notice">${state.notice}</div>` : ''}
+    ${canBatchPay ? '<div class="result-toolbar"><button type="button" class="btn btn-primary" id="btn-batch-pay">批量完成付款</button></div>' : ''}
     <div class="result-meta">共 ${rows.length} 筆</div>
     <div class="table-card"><div class="table-scroll"><table>
       <thead><tr>
-        <th>申請單號</th><th>申請款項類型</th><th>付款對象</th><th>總金額</th>
+        <th class="check-col"><input type="checkbox" id="f-check-all" aria-label="全選" ${rows.length ? '' : 'disabled'} ${rows.length && rows.every((r) => state.selectedIds[r.id]) ? 'checked' : ''}></th>
+        <th>申請單號</th><th>申請款項類型</th><th>付款對象</th><th>總金額</th><th>付款幣別</th><th>付款匯率</th>
         <th>建立時間</th><th>預計付款日</th><th>實際付款日</th><th>不通過原因</th><th>狀態</th><th>操作</th>
       </tr></thead>
       <tbody>
-        ${rows.map(r => `
+        ${rows.length === 0 ? `<tr><td colspan="13" class="empty-cell">查無符合條件的付款申請</td></tr>` : rows.map(r => `
           <tr>
+            <td class="check-col"><input type="checkbox" data-row-check="${r.id}" aria-label="選取 ${esc(r.no)}" ${state.selectedIds[r.id] ? 'checked' : ''}></td>
             <td class="mono">${r.no}</td>
             <td>${r.type}</td>
             <td>${esc(rowPayeeName(r))}</td>
             <td class="num">${money(r.amount, rowCurrency(r))}</td>
+            <td>${esc(rowCurrency(r))}</td>
+            <td class="num">${formatExchangeRate(r.exchangeRate)}</td>
             <td>${r.created}</td>
             <td>${dash(r.expected)}</td>
             <td>${dash(r.actual)}</td>
@@ -1208,7 +1299,7 @@ function renderList(){
         `).join('')}
       </tbody>
     </table></div></div>
-    ${state.payOpen ? renderPayRateModal() : ''}
+    ${state.payOpen || state.batchPayOpen ? renderPayRateModal() : ''}
     ${state.auditOpen ? renderAuditFileModal() : ''}
   `
 }
@@ -1229,8 +1320,14 @@ function renderAuditFileModal(){
   </div></div>`
 }
 
+function selectedPayRows(){
+  return ROWS.filter((r) => state.selectedIds[r.id] && r.status === '待付款' && !completesOnApprove(r.type))
+}
+
 function renderPayRateModal(){
-  const row = ROWS.find((r) => r.id === state.payTargetId)
+  const batch = state.batchPayOpen
+  const targets = batch ? selectedPayRows() : []
+  const row = batch ? targets[0] : ROWS.find((r) => r.id === state.payTargetId)
   const currency = row ? rowCurrency(row) : ''
   const needRate = row ? isForeignCurrency(rowCurrency(row)) : false
   const payDate = state.payDate || today()
@@ -1253,7 +1350,7 @@ function renderPayRateModal(){
   </div></div>`
 }
 
-function completePay(row, options){
+function completePay(row, options, silent){
   const actual = (options && options.actualPaymentDate) || today()
   const exchangeRate = options && options.exchangeRate
   row.actual = actual
@@ -1266,7 +1363,9 @@ function completePay(row, options){
       if (!item.writebacks) item.writebacks = []
     }
   })
+  if (silent) return
   state.payOpen = false
+  state.batchPayOpen = false
   state.payTargetId = ''
   state.payRate = ''
   state.payDate = ''
@@ -1275,6 +1374,22 @@ function completePay(row, options){
   state.notice = needsWriteoff(row.type)
     ? row.no + ' 已完成付款。此單為事後核銷，核銷歷史頁籤已出現（建檔人／財務均可看見）。'
     : row.no + '：已完成付款'
+}
+
+function completePays(rows, options){
+  rows.forEach((row) => completePay(row, options, true))
+  const writeoffCount = rows.filter((row) => needsWriteoff(row.type)).length
+  state.payOpen = false
+  state.batchPayOpen = false
+  state.payTargetId = ''
+  state.payRate = ''
+  state.payDate = ''
+  state.payDateError = ''
+  state.payError = ''
+  state.selectedIds = {}
+  state.notice = writeoffCount
+    ? '已完成付款 ' + rows.length + ' 筆。其中 ' + writeoffCount + ' 筆為事後核銷，核銷歷史頁籤已出現。'
+    : '已完成付款 ' + rows.length + ' 筆'
 }
 
 function nextThursday(iso){
@@ -1291,11 +1406,55 @@ function generalPay(iso){
   const last = new Date(y, m+1, 0).getDate()
   return new Date(y, m, Math.min(30,last)).toISOString().slice(0,10)
 }
-function expectedFor(type, date){
+function ymdLocal(d){
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+}
+function parseYmd(iso){
+  const parts = String(iso || '').split('-').map(Number)
+  if (!parts[0] || !parts[1] || !parts[2]) return null
+  return new Date(parts[0], parts[1] - 1, parts[2])
+}
+function umExpectedRange(dateStr){
+  const d = parseYmd(dateStr)
+  if (!d) return { min: '', max: '', def: '' }
+  const this25 = ymdLocal(new Date(d.getFullYear(), d.getMonth(), 25))
+  const next25 = ymdLocal(new Date(d.getFullYear(), d.getMonth() + 1, 25))
+  if (d.getDate() <= 25) return { min: this25, max: next25, def: this25 }
+  return { min: next25, max: next25, def: next25 }
+}
+function snapUmExpected(dateStr, current){
+  const r = umExpectedRange(dateStr)
+  if (current && (current === r.min || current === r.max)) return current
+  if (current) {
+    const picked = parseYmd(current)
+    if (picked) {
+      const snapped = ymdLocal(new Date(picked.getFullYear(), picked.getMonth(), 25))
+      if (snapped === r.min || snapped === r.max) return snapped
+    }
+  }
+  return r.def
+}
+function expectedFor(type, date, current){
   const meta = META[type]
+  if (type === '通路費用 (通路後扣)') return ''
+  if (isUmType(type)) return snapUmExpected(date, current)
   if (meta.petty) return nextThursday(date)
   if (meta.prepay) return date
   return generalPay(date)
+}
+function isExpectedEditable(type, date){
+  if (META[type] && META[type].prepay) return true
+  if (isUmType(type)) {
+    const d = parseYmd(date)
+    return !!(d && d.getDate() <= 25)
+  }
+  return false
+}
+function applyUmForm(form){
+  if (!isUmType(form.type)) return form
+  form.currency = '臺幣TWD'
+  form.monthlyTotals = lookupMockUmSettlement(form.vendor, form.month)
+  return form
 }
 
 function renderPayeeField(f, locked){
@@ -1327,11 +1486,12 @@ function renderPayeeField(f, locked){
 
 function renderOverview(){
   const f = state.form
+  applyUmForm(f)
   const meta = META[f.type]
   const methods = f.type === '個人代墊報支' ? ['匯款'] : ['匯款','開立支票','現金']
   const isWorkspace = state.page === 'workspace'
   const row = isWorkspace ? currentRow() : null
-  const locked = Boolean(isWorkspace && row && !canEdit(state.role, row.status))
+  const locked = Boolean((isWorkspace && row && !canEdit(state.role, row.status)) || (!isWorkspace && state.role === '出納'))
   const dis = locked ? 'disabled' : ''
   const submitLabel = isWorkspace ? '儲存' : '建立'
   return `
@@ -1354,7 +1514,7 @@ function renderOverview(){
           <label class="form-label required">結算月</label>
           <div class="form-control">
             <input id="o-month" type="month" value="${f.month}" ${dis} class="${state.submitted && !f.month ? 'error' : ''}">
-            <p class="field-hint">設定後，新增明細將自動帶入款項用途以及結算月。</p>
+            <p class="field-hint">${isUmType(f.type) ? '可自選結算月。設定後，新增發票將自動帶入款項用途與結算月，並依廠商帶入該月月結金額。' : '設定後，新增明細將自動帶入款項用途以及結算月。'}</p>
             ${state.submitted && !f.month ? '<p class="field-error">此欄位為必填</p>' : ''}
           </div>
         </div>` : ''}
@@ -1371,11 +1531,13 @@ function renderOverview(){
           <div class="form-control">
             ${renderPayeeField(f, locked)}
             ${isPettyType(f.type) ? '<p class="field-hint">付款類型為「個人代墊報支」時，付款對象為公司員工；預設帶入申請人，可改選。</p>' : ''}
+            ${isUmType(f.type) ? '<p class="field-hint">選完廠商與結算月後，系統帶入該月月結金額（DEMO 為假資料，正式環境由資料庫查詢）。</p>' : ''}
             ${state.submitted && !f.vendor ? '<p class="field-error">此欄位為必填</p>' : ''}
           </div>
         </div>
         <div class="form-row"><label class="form-label required">付款幣別</label><div class="form-control">
-          <select id="o-currency" ${dis}>${['臺幣TWD','美元USD','英镑GBP','澳元AUD','人民幣CNY','歐元EUR','港幣HK'].map(c=>`<option ${f.currency===c?'selected':''}>${c}</option>`).join('')}</select>
+          <select id="o-currency" ${locked || isUmType(f.type) ? 'disabled' : ''}>${['臺幣TWD','美元USD','英镑GBP','澳元AUD','人民幣CNY','歐元EUR','港幣HK'].map(c=>`<option ${(isUmType(f.type) ? '臺幣TWD' : f.currency)===c?'selected':''}>${c}</option>`).join('')}</select>
+          ${isUmType(f.type) ? '<p class="field-hint">月結金額為臺幣，付款幣別不可變更。</p>' : ''}
         </div></div>
         <div class="form-row"><label class="form-label required">付款方式</label><div class="form-control">
           <select id="o-method" ${dis}>${methods.map(m=>`<option ${f.method===m?'selected':''}>${m}</option>`).join('')}</select>
@@ -1385,20 +1547,26 @@ function renderOverview(){
           <select id="o-fee" ${dis}>${['公司負擔','收款人負擔'].map(o=>`<option ${f.fee===o?'selected':''}>${o}</option>`).join('')}</select>
         </div></div>
         <div class="form-row"><label class="form-label">總付款金額（含稅）</label><div class="form-control">
-          <input disabled value="${row ? formatAmount(sumAmounts((row.vouchers || []).map((item) => item.payAmount)), rowCurrency(row)) : 0}">
+          <input disabled value="${(() => {
+            const um = isUmType(f.type) ? (f.monthlyTotals || lookupMockUmSettlement(f.vendor, f.month)) : null
+            if (um) return formatAmount(um.companyInvoiceAmount, '臺幣TWD')
+            return row ? formatAmount(sumAmounts((row.vouchers || []).map((item) => item.payAmount)), rowCurrency(row)) : 0
+          })()}">
+          ${isUmType(f.type) ? '<p class="field-hint">帶入「貴公司開立發票金額(含稅)」。選完廠商與結算月後由月結資料帶入，不可編輯。</p>' : ''}
         </div></div>
-        <div class="form-row"><label class="form-label required">預計付款日</label><div class="form-control">
-          <input id="o-expected" type="date" value="${f.expected}" ${locked || !meta.prepay ? 'disabled' : ''}>
+        ${f.type === '通路費用 (通路後扣)' ? '' : `<div class="form-row"><label class="form-label required">預計付款日</label><div class="form-control">
+          <input id="o-expected" type="date" value="${f.expected}" ${locked || !isExpectedEditable(f.type, f.date) ? 'disabled' : ''} min="${isUmType(f.type) ? umExpectedRange(f.date).min : (meta.prepay ? f.date : '')}" max="${isUmType(f.type) ? umExpectedRange(f.date).max : (meta.prepay ? '' : '')}">
           <div class="info-box">
             <div class="info-box-title">預計付款日（需依付款類型限制）</div>
             <ul class="rule-list">
               <li><strong>一般付款：</strong>每月21日~次月5日（含）之申請，付款日為次月15日；每月6日~20日（含）之申請，付款日為當月30日。</li>
               <li><strong>零用金：</strong>下一個週四（申請日若為週四，則為下週四）。</li>
               <li><strong>預付款：</strong>須在申請日起 5 日內（含）。</li>
+              <li><strong>URMART 月結：</strong>申請日 1–25 日預設當月 25 日，可改為次月 25 日；26 日起僅可選次月 25 日。</li>
             </ul>
-            <div class="rule-footer">${meta.petty ? '目前類別「零用金」：自動帶入下週四。' : meta.prepay ? '目前類別「預付款」：預設申請日，可於 5 日內調整。' : '目前類別依一般付款截止規則自動帶入。'}</div>
+            <div class="rule-footer">${isUmType(f.type) ? '目前類別「URMART 月結」：申請日 1–25 日預設當月 25 日，可改次月 25 日；26 日起僅可選次月 25 日。' : meta.petty ? '目前類別「零用金」：自動帶入下週四。' : meta.prepay ? '目前類別「預付款」：預設申請日，可於 5 日內調整。' : '目前類別依一般付款截止規則自動帶入。'}</div>
           </div>
-        </div></div>
+        </div></div>`}
       </div>
     </form>
   `
@@ -1409,11 +1577,16 @@ function renderDetailsTab(row){
   const hasDraft = row.vouchers.some((item) => item.status === '草稿')
   const canReview = state.role === '財務' && row.status === '待審核'
   const hasAnyDetail = row.vouchers.length > 0
-  const canExport = hasAnyDetail && !parentLocked && (hasDraft || Boolean(row.exportedFile))
+  const umMode = isUmType(row.type) && row.overview && row.overview.monthlyTotals
+  const invoiceSum = sumAmounts((row.vouchers || []).map((item) => item.payAmount))
+  const invoiceTarget = umMode ? row.overview.monthlyTotals.companyInvoiceAmount : 0
+  const invoiceOk = !umMode || invoiceSumMatchesTarget(invoiceSum, invoiceTarget)
+  const canExport = state.role !== '出納' && hasAnyDetail && !parentLocked && (hasDraft || Boolean(row.exportedFile)) && invoiceOk
+  const invoiceOnly = row.type === '通路費用 (通路後扣)' || isUmType(row.type)
   const showRate = isForeignCurrency(rowCurrency(row))
   const colCount = showRate ? 15 : 14
   const rowsHtml = row.vouchers.length === 0
-    ? `<tr><td colspan="${colCount}" class="empty-cell">尚無已保存之憑證明細</td></tr>`
+    ? `<tr><td colspan="${colCount}" class="empty-cell">${invoiceOnly ? '尚無已保存之發票' : '尚無已保存之憑證明細'}</td></tr>`
     : row.vouchers.map((item, idx) => {
         const ops = (parentLocked ? [['view','檢視']] : voucherOps(state.role, item.status)).map(([k,l]) => `<button type="button" data-vop="${k}" data-vid="${item.id}">${l}</button>`).join('')
         return `<tr>
@@ -1434,17 +1607,31 @@ function renderDetailsTab(row){
           <td><div class="details-ops">${ops}</div></td>
         </tr>`
       }).join('')
+  const monthlyHtml = umMode ? `
+      <div class="monthly-settlement">
+        <h2 class="monthly-title">月結彙總（唯讀，由廠商結算報表帶入）</h2>
+        <dl class="monthly-grid">${MONTHLY_FIELDS.map(([key, label]) => `<div class="monthly-item"><dt>${label}</dt><dd>${formatAmount(row.overview.monthlyTotals[key], rowCurrency(row))}</dd></div>`).join('')}</dl>
+        <div class="invoice-match${invoiceOk ? ' is-ok' : ' is-bad'}">
+          <div class="invoice-match-amounts">
+            <div class="invoice-match-row"><span>貴公司開立發票金額(含稅)</span><strong>${formatAmount(invoiceTarget, rowCurrency(row))}</strong></div>
+            <div class="invoice-match-row"><span>所需發票總金額</span><strong>${formatAmount(invoiceTarget, rowCurrency(row))}</strong></div>
+            <div class="invoice-match-row"><span>目前發票總金額</span><strong>${formatAmount(invoiceSum, rowCurrency(row))}</strong></div>
+          </div>
+          <p class="invoice-match-status">${invoiceSumHint(invoiceSum, invoiceTarget)}</p>
+        </div>
+      </div>` : ''
   return `
     <div class="details-panel">
       <div class="details-toolbar">
         <div class="details-meta">總共 ${row.vouchers.length} 筆，每頁顯示 <select><option>10</option><option selected>20</option><option>50</option></select> 筆</div>
         <div class="details-actions">
-          <button type="button" class="btn btn-primary" id="btn-add-detail" ${canAdd ? '' : 'disabled'}>+ 新增明細</button>
+          <button type="button" class="btn btn-primary" id="btn-add-detail" ${canAdd ? '' : 'disabled'}>${invoiceOnly ? '+ 新增發票' : '+ 新增明細'}</button>
           <button type="button" class="btn btn-default" id="btn-export" ${canExport ? '' : 'disabled'}>導出文件</button>
           <button type="button" class="${canReview ? 'btn btn-primary' : 'btn btn-disabled'}" id="btn-approve" ${canReview ? '' : 'disabled'}>審核通過</button>
           <button type="button" class="${canReview ? 'btn btn-default' : 'btn btn-disabled'}" id="btn-reject" ${canReview ? '' : 'disabled'}>審核不通過</button>
         </div>
       </div>
+      ${monthlyHtml}
       <div class="details-table-wrap"><table class="details-table">
         <thead><tr>
           <th>ID</th><th>廠商統編</th><th>款項用途</th><th>備註單號</th><th>憑證樣式</th>
@@ -1453,12 +1640,12 @@ function renderDetailsTab(row){
         </tr></thead>
         <tbody>${rowsHtml}</tbody>
       </table></div>
-      <p class="details-foot">請點「+ 新增明細」以列出憑證明細。本表僅顯示已保存之憑證。首次導出會下載該批草稿明細 PDF，並將草稿改為待審核；之後可重複下載同一份檔案且狀態不變。母單已完成後僅可檢視。</p>
+      <p class="details-foot">請點「${invoiceOnly ? '+ 新增發票' : '+ 新增明細'}」以列出憑證明細。本表僅顯示已保存之憑證。首次導出會下載該批草稿明細 PDF，並將草稿改為待審核；之後可重複下載同一份檔案且狀態不變。母單已完成後僅可檢視。${umMode ? ' URMART 月結須發票加總與貴公司開立發票金額相差在 ±3 元以內才可導出／送審。' : ''}</p>
     </div>
     ${state.modalMode === 'view' ? renderViewModal() : ''}
     ${state.modalMode === 'add' || state.modalMode === 'edit' ? renderDraftModal(row) : ''}
     ${state.rejectOpen ? renderRejectModal() : ''}
-`
+  `
 }
 function renderRejectModal(){
   return `<div class="modal-mask" id="reject-mask"><div class="modal-card modal-card-sm" id="reject-card">
@@ -1745,6 +1932,32 @@ function renderWorkspace(){
   `
 }
 
+function bindListChecks(){
+  const boxes = Array.from(document.querySelectorAll('[data-row-check]'))
+  const header = document.getElementById('f-check-all')
+  const ids = boxes.map((el) => el.dataset.rowCheck)
+  const selectedCount = ids.filter((id) => state.selectedIds[id]).length
+  if (header) {
+    header.indeterminate = selectedCount > 0 && selectedCount < ids.length
+    header.onchange = () => {
+      const nextAll = !(ids.length && ids.every((id) => state.selectedIds[id]))
+      ids.forEach((id) => {
+        if (nextAll) state.selectedIds[id] = true
+        else delete state.selectedIds[id]
+      })
+      render()
+    }
+  }
+  boxes.forEach((el) => {
+    el.onchange = () => {
+      const id = el.dataset.rowCheck
+      if (el.checked) state.selectedIds[id] = true
+      else delete state.selectedIds[id]
+      render()
+    }
+  })
+}
+
 function bindDatePicker(){
   document.querySelectorAll('[data-date-open]').forEach((btn) => {
     btn.onclick = (e) => {
@@ -1881,6 +2094,7 @@ function bindPayeeSelect(){
       e.preventDefault()
       e.stopPropagation()
       state.form.vendor = btn.dataset.payee
+      applyUmForm(state.form)
       state.payeeOpen = false
       state.payeeKeyword = ''
       state.saved = false
@@ -1908,16 +2122,36 @@ function bindForm(){
     } else if (EMPLOYEES.some((e) => e.id === state.form.vendor) && !VENDORS.some((v) => v.id === state.form.vendor)) {
       state.form.vendor = ''
     }
-    state.form.currency = document.getElementById('o-currency').value
+    const currencyEl = document.getElementById('o-currency')
+    state.form.currency = currencyEl ? currencyEl.value : state.form.currency
     state.form.method = document.getElementById('o-method').value
     state.form.fee = document.getElementById('o-fee').value
-    state.form.expected = expectedFor(state.form.type, state.form.date)
+    const expectedEl = document.getElementById('o-expected')
+    const currentExpected = expectedEl && !expectedEl.disabled ? expectedEl.value : state.form.expected
+    state.form.expected = expectedFor(state.form.type, state.form.date, currentExpected)
+    applyUmForm(state.form)
     state.payeeOpen = false
     state.payeeKeyword = ''
     render()
   }
   typeEl.onchange = sync
   dateEl.onchange = sync
+  const monthEl = document.getElementById('o-month')
+  if (monthEl) monthEl.onchange = () => {
+    if (typeEl.disabled) return
+    state.form.month = monthEl.value
+    applyUmForm(state.form)
+    state.saved = false
+    render()
+  }
+  const expectedEl = document.getElementById('o-expected')
+  if (expectedEl && !expectedEl.disabled) {
+    expectedEl.onchange = () => {
+      state.form.expected = expectedFor(state.form.type, state.form.date, expectedEl.value)
+      state.saved = false
+      render()
+    }
+  }
   document.getElementById('overview-form').onsubmit = (e) => {
     e.preventDefault()
     if (typeEl.disabled) return
@@ -1929,15 +2163,24 @@ function bindForm(){
     state.form.currency = document.getElementById('o-currency').value
     state.form.method = document.getElementById('o-method').value
     state.form.fee = document.getElementById('o-fee').value
-    const expectedEl = document.getElementById('o-expected')
-    if (expectedEl && !expectedEl.disabled) state.form.expected = expectedEl.value
+    const expectedInput = document.getElementById('o-expected')
+    if (expectedInput && !expectedInput.disabled) {
+      state.form.expected = expectedFor(state.form.type, state.form.date, expectedInput.value)
+    } else {
+      state.form.expected = expectedFor(state.form.type, state.form.date, state.form.expected)
+    }
+    applyUmForm(state.form)
     const meta = META[state.form.type]
     if ((meta.settlement && !state.form.month) || !state.form.vendor) { render(); return }
+    const umAmount = isUmType(state.form.type) && state.form.monthlyTotals
+      ? state.form.monthlyTotals.companyInvoiceAmount
+      : 0
     if (state.page === 'workspace') {
       const row = currentRow()
       row.type = state.form.type
       row.expected = state.form.expected
       row.overview = { ...state.form, vendorName: payeeDisplayName(state.form.vendor, state.form.type) }
+      if (isUmType(state.form.type)) row.amount = umAmount
       state.saved = true
       state.submitted = false
       render()
@@ -1950,7 +2193,7 @@ function bindForm(){
       type: state.form.type,
       applicant: 'ruby.lee',
       details: 0,
-      amount: 0,
+      amount: umAmount,
       created: today() + ' 12:00:00',
       expected: state.form.expected,
       actual: null,
@@ -1978,6 +2221,7 @@ function render(){
 
   if (state.page === 'list') {
     document.getElementById('btn-new').onclick = () => {
+      if (state.role === '出納') return
       state.submitted = false
       state.form = { type:'個人代墊報支', month:'', date: today(), vendor: findEmployeeForApplicant('ruby.lee').id, currency:'臺幣TWD', method:'匯款', fee:'公司負擔', expected: expectedFor('個人代墊報支', today()) }
       setPage('overview')
@@ -1998,6 +2242,7 @@ function render(){
         type: document.getElementById('f-type').value,
         status: document.getElementById('f-status').value,
         applicant: document.getElementById('f-applicant').value,
+        currency: document.getElementById('f-currency').value,
         payeeKind: f.payeeKind || '',
         payeeId: f.payeeId || '',
         createdFrom: f.createdFrom || '',
@@ -2010,7 +2255,8 @@ function render(){
       render()
     }
     document.getElementById('btn-reset').onclick = () => {
-      state.filters = { no:'', type:'', status:'', applicant:'', payeeKind:'', payeeId:'', createdFrom:'', createdTo:'', expectedFrom:'', expectedTo:'', actualFrom:'', actualTo:'' }
+      state.filters = { no:'', type:'', status:'', applicant:'', currency:'', payeeKind:'', payeeId:'', createdFrom:'', createdTo:'', expectedFrom:'', expectedTo:'', actualFrom:'', actualTo:'' }
+      state.selectedIds = {}
       state.filterPayeeOpen = false
       state.filterPayeeKeyword = ''
       state.datePicker = null
@@ -2020,6 +2266,26 @@ function render(){
     bindFilterPayee()
     bindDatePicker()
     bindReasonBubbles()
+    bindListChecks()
+    const batchBtn = document.getElementById('btn-batch-pay')
+    if (batchBtn) batchBtn.onclick = () => {
+      if (state.role !== '出納') return
+      const targets = selectedPayRows()
+      if (!targets.length) return
+      const currencies = Array.from(new Set(targets.map((row) => rowCurrency(row))))
+      if (currencies.length !== 1) {
+        alert('需所有申請皆為相同幣別才可批量操作')
+        return
+      }
+      state.batchPayOpen = true
+      state.payOpen = false
+      state.payTargetId = ''
+      state.payRate = ''
+      state.payDate = today()
+      state.payDateError = ''
+      state.payError = ''
+      render()
+    }
     app.querySelectorAll('[data-act]').forEach(btn => {
       btn.onclick = () => {
         if (btn.disabled) return
@@ -2066,6 +2332,7 @@ function render(){
         }
         if (act === 'pay') {
           state.payOpen = true
+          state.batchPayOpen = false
           state.payTargetId = row.id
           state.payRate = ''
           state.payDate = today()
@@ -2128,6 +2395,7 @@ function bindAuditFileModal(){
 function bindPayRateModal(){
   const closePay = () => {
     state.payOpen = false
+    state.batchPayOpen = false
     state.payTargetId = ''
     state.payRate = ''
     state.payDate = ''
@@ -2163,7 +2431,8 @@ function bindPayRateModal(){
   }
   const ok = document.getElementById('pay-rate-ok')
   if (ok) ok.onclick = () => {
-    const row = ROWS.find((r) => r.id === state.payTargetId)
+    const targets = state.batchPayOpen ? selectedPayRows() : [ROWS.find((r) => r.id === state.payTargetId)].filter(Boolean)
+    const row = targets[0]
     if (!row) return
     const actualPaymentDate = (document.getElementById('pay-date')?.value || '').trim()
     state.payDate = actualPaymentDate
@@ -2197,7 +2466,8 @@ function bindPayRateModal(){
       render()
       return
     }
-    completePay(row, { actualPaymentDate, exchangeRate })
+    if (state.batchPayOpen) completePays(targets, { actualPaymentDate, exchangeRate })
+    else completePay(row, { actualPaymentDate, exchangeRate })
     render()
   }
 }
@@ -2223,6 +2493,15 @@ function bindVoucherUi(){
       return
     }
     if (!hasDraft) return
+    const umMode = isUmType(row.type) && row.overview && row.overview.monthlyTotals
+    if (umMode) {
+      const invoiceSum = sumAmounts((row.vouchers || []).map((item) => item.payAmount))
+      const invoiceTarget = row.overview.monthlyTotals.companyInvoiceAmount
+      if (!invoiceSumMatchesTarget(invoiceSum, invoiceTarget)) {
+        alert(invoiceSumHint(invoiceSum, invoiceTarget))
+        return
+      }
+    }
     exp.disabled = true
     const oldText = exp.textContent
     exp.textContent = '導出中…'
@@ -2239,9 +2518,11 @@ function bindVoucherUi(){
   }
   const ap = document.getElementById('btn-approve')
   if (ap && !ap.disabled) ap.onclick = () => {
-    row.status = '待付款'
+    row.status = completesOnApprove(row.type) ? '已完成' : '待付款'
     row.reason = ''
-    row.vouchers.forEach((item) => { if (item.status === '待審核') item.status = '審核通過' })
+    row.vouchers.forEach((item) => {
+      if (item.status === '待審核') item.status = completesOnApprove(row.type) ? '已完成' : '審核通過'
+    })
     render()
   }
   const closeReject = () => {
@@ -2284,6 +2565,7 @@ function bindVoucherUi(){
       const item = row.vouchers.find((v) => v.id === btn.dataset.vid)
       if (!item) return
       if (btn.dataset.vop === 'view') { state.modalMode = 'view'; state.viewing = item; render() }
+      if (state.role === '出納') return
       if (btn.dataset.vop === 'edit') { state.modalMode = 'edit'; state.editingId = item.id; state.draft = emptyDraft(row, item); render() }
       if (btn.dataset.vop === 'void' && confirm('確定作廢此筆明細？')) {
         row.vouchers = row.vouchers.filter((v) => v.id !== item.id)

@@ -13,17 +13,26 @@ export interface RowOperation {
   disabled?: boolean
 }
 
-/** 建檔人：導出前／審核不通過可編輯。財務：非已完成／已作廢皆可編輯。已完成僅能檢視。 */
+/** 建檔人：導出前／審核不通過可編輯。財務：非已完成／已作廢皆可編輯。出納：不可編輯。 */
 export function canEditApplication(role: UserRole, status: PaymentStatus) {
+  if (role === '出納') return false
   if (status === '已作廢' || status === '已完成') return false
   if (role === '財務') return true
-  return status === '草稿' || status === '審核不通過'
+  if (role === '建檔人') return status === '草稿' || status === '審核不通過'
+  return false
 }
 
 function canVoidApplication(role: UserRole, status: PaymentStatus) {
+  if (role === '出納') return false
   if (status === '已完成' || status === '已作廢') return false
   if (role === '財務') return true
-  return status === '草稿' || status === '審核不通過'
+  if (role === '建檔人') return status === '草稿' || status === '審核不通過'
+  return false
+}
+
+/** 完成付款／批量完成付款僅出納可操作。 */
+export function canCompletePayment(role: UserRole) {
+  return role === '出納'
 }
 
 const ALL_OPS: { key: string; label: string; kind?: 'primary' | 'danger' }[] = [
@@ -33,7 +42,6 @@ const ALL_OPS: { key: string; label: string; kind?: 'primary' | 'danger' }[] = [
   { key: 'review', label: '進行審核', kind: 'primary' },
   { key: 'writeoff', label: '進行核銷' },
   { key: 'pay', label: '完成付款', kind: 'primary' },
-  { key: 'auditFile', label: '檢視審核檔案' },
 ]
 
 export function getRowOperations(
@@ -49,8 +57,9 @@ export function getRowOperations(
     TYPES_NEED_WRITEOFF.includes(paymentType) &&
     (status === '待核銷' || status === '部分核銷')
   const canPay =
-    role === '財務' && status === '待付款' && !completesOnApprove(paymentType)
-  const canAuditFile = status === '已完成'
+    canCompletePayment(role) &&
+    status === '待付款' &&
+    !completesOnApprove(paymentType)
 
   const enabled: Record<string, boolean> = {
     edit: canEdit,
@@ -59,12 +68,9 @@ export function getRowOperations(
     review: canReview,
     writeoff: canWriteoff,
     pay: canPay,
-    auditFile: canAuditFile,
   }
 
-  return ALL_OPS.filter((op) =>
-    op.key === 'auditFile' ? canAuditFile : true,
-  ).map((op) => ({
+  return ALL_OPS.map((op) => ({
     ...op,
     disabled: !enabled[op.key],
   }))

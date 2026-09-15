@@ -110,6 +110,10 @@
   font-size: 13px;
 }
 
+.result-toolbar {
+  margin-bottom: 8px;
+}
+
 .result-meta {
   margin-bottom: 8px;
   font-size: 13px;

@@ -100,7 +100,7 @@ export const mockApplications: PaymentApplication[] = [
     detailCount: 8,
     totalAmount: 256400,
     createdAt: '2026-07-19 08:33:00',
-    expectedPaymentDate: '2026-07-30',
+    expectedPaymentDate: '2026-07-25',
     actualPaymentDate: null,
     rejectReason: null,
     status: '待付款',

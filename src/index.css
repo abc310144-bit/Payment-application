@@ -65,6 +65,13 @@ a {
   color: #2b5cff;
 }
 
+.btn:disabled,
+.btn-primary:disabled,
+.btn-default:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .btn-danger {
   background: #fff;
   border-color: #ffccc7;

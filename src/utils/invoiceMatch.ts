@@ -1,7 +1,7 @@
-import { isForeignCurrency } from '../types/payment'
 import { parseAmount, roundMoney } from './money'
 
-const FOREIGN_INVOICE_TOLERANCE = 3
+/** 發票加總與貴公司開立發票金額允許相差的絕對值（元，臺幣／外幣皆適用） */
+export const INVOICE_AMOUNT_TOLERANCE = 3
 
 export function invoiceAmountSum(
   amounts: Array<number | null | undefined>,
@@ -14,13 +14,10 @@ export function invoiceAmountSum(
 export function invoiceSumMatchesTarget(
   invoiceSum: number,
   target: number,
-  currency?: string | null,
+  _currency?: string | null,
 ): boolean {
   const diff = Math.abs(roundMoney(invoiceSum) - roundMoney(target))
-  if (isForeignCurrency(currency)) {
-    return diff <= FOREIGN_INVOICE_TOLERANCE
-  }
-  return diff < 0.0001
+  return diff <= INVOICE_AMOUNT_TOLERANCE
 }
 
 export function invoiceSumHint(
@@ -28,13 +25,8 @@ export function invoiceSumHint(
   target: number,
   currency?: string | null,
 ): string {
-  const foreign = isForeignCurrency(currency)
   if (invoiceSumMatchesTarget(invoiceSum, target, currency)) {
-    return foreign
-      ? '目前發票總金額已符合所需發票總金額（外幣允許 ±3）。'
-      : '目前發票總金額已等於所需發票總金額。'
+    return '發票加總與貴公司開立發票金額相差在 ±3 元以內，可導出／送審。'
   }
-  return foreign
-    ? '外幣：目前發票總金額須與所需發票總金額相差不超過 3。'
-    : '目前發票總金額須等於所需發票總金額。'
+  return '發票加總與貴公司開立發票金額相差超過 ±3 元，請調整發票後再導出／送審。'
 }

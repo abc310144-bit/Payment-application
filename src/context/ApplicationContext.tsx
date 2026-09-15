@@ -8,8 +8,10 @@ import type {
 import {
   completesOnApprove,
   isForeignCurrency,
+  isUmMonthlyType,
   PAYMENT_TYPE_META,
 } from '../types/payment'
+import { lookupMockUmSettlement } from '../utils/mockVendorSettlement'
 import {
   commitAmount,
   FOREIGN_MIN_AMOUNT,
@@ -57,6 +59,10 @@ interface ApplicationContextValue {
     id: string,
     options: { actualPaymentDate: string; exchangeRate?: number },
   ) => StoredApplication | undefined
+  completePayments: (
+    ids: string[],
+    options: { actualPaymentDate: string; exchangeRate?: number },
+  ) => StoredApplication[]
   submitApplication: (id: string) => StoredApplication | undefined
   approveApplication: (id: string) => StoredApplication | undefined
   rejectApplication: (id: string, reason: string) => StoredApplication | undefined
@@ -100,32 +106,48 @@ function seedOverview(row: PaymentApplication): ApplicationOverview {
     row.paymentType === '個人代墊報支'
       ? defaultPayeeId(row.paymentType, row.applicant)
       : vendor.id
+  const umMonthly = isUmMonthlyType(row.paymentType)
+  const settlementMonth = PAYMENT_TYPE_META[row.paymentType].needsSettlementMonth
+    ? '2026-07'
+    : ''
+  const monthlyTotals = umMonthly
+    ? lookupMockUmSettlement(vendorId, settlementMonth)
+    : null
+  const totalAmount = monthlyTotals?.companyInvoiceAmount ?? row.totalAmount
   return {
     paymentType: row.paymentType,
-    settlementMonth: PAYMENT_TYPE_META[row.paymentType].needsSettlementMonth
-      ? '2026-07'
-      : '',
+    settlementMonth,
     applicant: row.applicant,
     applicationDate: row.createdAt.slice(0, 10),
     vendorId,
-    currency: row.id === '8' || row.id === '11' ? '美元USD' : '臺幣TWD',
+    currency: row.id === '11' ? '美元USD' : '臺幣TWD',
     paymentMethod: '匯款',
     remittanceFee: '公司負擔',
-    totalAmount: row.totalAmount,
-    expectedPaymentDate: row.expectedPaymentDate || '',
+    totalAmount,
+    expectedPaymentDate: umMonthly
+      ? '2026-07-25'
+      : row.expectedPaymentDate || '',
     vendorName: getPayeeDisplayName(vendorId, row.paymentType),
+    vendorTaxId: umMonthly ? vendor.taxId : undefined,
+    monthlyTotals,
   }
 }
 
 export function ApplicationProvider({ children }: { children: ReactNode }) {
   const [applications, setApplications] = useState<StoredApplication[]>(() =>
-    mockApplications.map((row) => ({
-      ...row,
-      vouchers: [],
-      overview: seedOverview(row),
-      paymentExchangeRate: null,
-      exportedFile: null,
-    })),
+    mockApplications.map((row) => {
+      const overview = seedOverview(row)
+      return {
+        ...row,
+        totalAmount: overview.totalAmount ?? row.totalAmount,
+        expectedPaymentDate:
+          overview.expectedPaymentDate || row.expectedPaymentDate,
+        vouchers: [],
+        overview,
+        paymentExchangeRate: null,
+        exportedFile: null,
+      }
+    }),
   )
 
   const value = useMemo<ApplicationContextValue>(() => {
@@ -164,6 +186,8 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
                 paymentType: overview.paymentType,
                 applicant: overview.applicant,
                 expectedPaymentDate: optionalDate(overview.expectedPaymentDate),
+                totalAmount:
+                  overview.monthlyTotals?.companyInvoiceAmount ?? row.totalAmount,
                 overview,
               }
             : row,
@@ -211,6 +235,38 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
         prev.map((row) => (row.id === id ? updated : row)),
       )
       return updated
+    }
+
+    const completePayments = (
+      ids: string[],
+      options: { actualPaymentDate: string; exchangeRate?: number },
+    ) => {
+      const idSet = new Set(ids)
+      const paid: StoredApplication[] = []
+      setApplications((prev) => {
+        paid.length = 0
+        return prev.map((row) => {
+          if (
+            !idSet.has(row.id) ||
+            row.status !== '待付款' ||
+            completesOnApprove(row.paymentType)
+          ) {
+            return row
+          }
+          const needWriteoff = needsWriteoffHistory(row.paymentType)
+          const updated = withTotals({
+            ...row,
+            actualPaymentDate: options.actualPaymentDate,
+            status: needWriteoff ? '待核銷' : '已完成',
+            paymentExchangeRate:
+              options.exchangeRate ?? row.paymentExchangeRate ?? null,
+            vouchers: mapDetailsOnCompletePayment(row.vouchers, row.paymentType),
+          })
+          paid.push(updated)
+          return updated
+        })
+      })
+      return paid
     }
 
     const submitApplication = (id: string) => {
@@ -423,6 +479,7 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
       createApplication,
       updateOverview,
       completePayment,
+      completePayments,
       submitApplication,
       approveApplication,
       rejectApplication,

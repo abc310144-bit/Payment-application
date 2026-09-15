@@ -1,9 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useRole } from '../context/RoleContext'
-import type { UserRole } from '../types/payment'
+import { USER_ROLES } from '../types/payment'
 import './AppLayout.css'
-
-const ROLES: UserRole[] = ['建檔人', '財務']
 
 function Breadcrumb() {
   const { pathname } = useLocation()
@@ -53,7 +51,7 @@ export function AppLayout() {
           <div className="role-switcher">
             <span className="role-label">原型角色</span>
             <div className="role-tabs" role="tablist">
-              {ROLES.map((r) => (
+              {USER_ROLES.map((r) => (
                 <button
                   key={r}
                   type="button"

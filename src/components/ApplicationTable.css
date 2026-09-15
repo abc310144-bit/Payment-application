@@ -44,6 +44,20 @@
   font-variant-numeric: tabular-nums;
 }
 
+.check-col {
+  width: 40px;
+  text-align: center;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.check-col input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
 .empty-cell {
   text-align: center;
   color: #8c8c8c;

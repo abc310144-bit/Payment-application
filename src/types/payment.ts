@@ -19,8 +19,10 @@ export type PaymentStatus =
   | '已完成'
   | '已作廢'
 
-/** 系統角色（原型用切換） */
-export type UserRole = '建檔人' | '財務'
+/** 系統角色（原型用切換）。出納僅可查詢、檢視、勾選與完成付款。 */
+export type UserRole = '建檔人' | '財務' | '出納'
+
+export const USER_ROLES: UserRole[] = ['建檔人', '財務', '出納']
 
 export type CurrencyCode =
   | '臺幣TWD'
@@ -154,7 +156,7 @@ export const PAYMENT_TYPE_META: Record<PaymentType, PaymentTypeMeta> = {
     type: 'URMART 月結廠商',
     title: 'URMART 月結廠商',
     description:
-      '匯入月結總結表後選擇廠商，結算月與憑證明細彙總欄自動帶入；發票請手動新增。',
+      '自選結算月與廠商後，系統帶入該月月結金額（固定臺幣）。新增發票將自動帶入款項用途與結算月；發票加總須與貴公司開立發票金額相差在 ±3 元以內才可導出／送審。',
     ruleCategory: '待確認',
     needsSettlementMonth: true,
   },

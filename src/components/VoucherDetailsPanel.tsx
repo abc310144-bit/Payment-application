@@ -98,6 +98,7 @@ export function VoucherDetailsPanel({ app }: Props) {
       app.overview?.currency,
     )
   const canExport =
+    role !== '出納' &&
     hasAnyDetail &&
     !parentLocked &&
     !exporting &&
@@ -231,13 +232,7 @@ export function VoucherDetailsPanel({ app }: Props) {
               </div>
             </div>
             <p className="invoice-match-status">
-              {invoiceOk
-                ? isForeignCurrency(app.overview?.currency)
-                  ? '目前發票總金額已符合所需金額（外幣允許 ±3）。'
-                  : '目前發票總金額已等於所需發票總金額。'
-                : isForeignCurrency(app.overview?.currency)
-                  ? '目前發票總金額與所需金額不相符（外幣允許 ±3），請調整發票。'
-                  : '目前發票總金額與所需發票總金額不相等，請調整發票。'}
+              {invoiceSumHint(invoiceSum, invoiceTarget, app.overview?.currency)}
             </p>
           </div>
         </div>
@@ -336,7 +331,7 @@ export function VoucherDetailsPanel({ app }: Props) {
 
       <p className="details-foot">
         {umMode
-          ? '請點「+ 新增發票」補上憑證。全部發票金額加總須等於「貴公司開立發票金額(含稅)」；外幣允許相差 ±3。彙總欄位唯讀。'
+          ? '請點「+ 新增發票」補上憑證。發票加總與貴公司開立發票金額相差在 ±3 元以內才可導出／送審（臺幣、外幣皆適用）。彙總欄位唯讀。'
           : invoiceOnlyMode
             ? '請點「+ 新增發票」新增一至多張發票。首次導出會下載該批草稿發票 PDF，並將草稿改為待審核；財務審核通過後單據直接已完成。'
             : '請點「+ 新增明細」以列出憑證明細。本表僅顯示已保存之憑證。首次導出會下載該批草稿明細 PDF，並將草稿改為待審核；之後可重複下載同一份檔案且狀態不變。母單已完成後僅可檢視。'}
