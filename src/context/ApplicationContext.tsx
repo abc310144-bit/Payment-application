@@ -63,6 +63,8 @@ interface ApplicationContextValue {
     ids: string[],
     options: { actualPaymentDate: string; exchangeRate?: number },
   ) => StoredApplication[]
+  failPayment: (id: string) => StoredApplication | undefined
+  failPayments: (ids: string[]) => StoredApplication[]
   submitApplication: (id: string) => StoredApplication | undefined
   approveApplication: (id: string) => StoredApplication | undefined
   rejectApplication: (id: string, reason: string) => StoredApplication | undefined
@@ -216,12 +218,16 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    const canFinishPayment = (row: StoredApplication) =>
+      (row.status === '待付款' || row.status === '付款失敗') &&
+      !completesOnApprove(row.paymentType)
+
     const completePayment = (
       id: string,
       options: { actualPaymentDate: string; exchangeRate?: number },
     ) => {
       const current = applications.find((row) => row.id === id)
-      if (!current) return undefined
+      if (!current || !canFinishPayment(current)) return undefined
       const needWriteoff = needsWriteoffHistory(current.paymentType)
       const updated = withTotals({
         ...current,
@@ -246,11 +252,7 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
       setApplications((prev) => {
         paid.length = 0
         return prev.map((row) => {
-          if (
-            !idSet.has(row.id) ||
-            row.status !== '待付款' ||
-            completesOnApprove(row.paymentType)
-          ) {
+          if (!idSet.has(row.id) || !canFinishPayment(row) || row.status !== '待付款') {
             return row
           }
           const needWriteoff = needsWriteoffHistory(row.paymentType)
@@ -267,6 +269,43 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
         })
       })
       return paid
+    }
+
+    const failPayment = (id: string) => {
+      const current = applications.find((row) => row.id === id)
+      if (
+        !current ||
+        current.status !== '待付款' ||
+        completesOnApprove(current.paymentType)
+      ) {
+        return undefined
+      }
+      const updated: StoredApplication = { ...current, status: '付款失敗' }
+      setApplications((prev) =>
+        prev.map((row) => (row.id === id ? updated : row)),
+      )
+      return updated
+    }
+
+    const failPayments = (ids: string[]) => {
+      const idSet = new Set(ids)
+      const failed: StoredApplication[] = []
+      setApplications((prev) => {
+        failed.length = 0
+        return prev.map((row) => {
+          if (
+            !idSet.has(row.id) ||
+            row.status !== '待付款' ||
+            completesOnApprove(row.paymentType)
+          ) {
+            return row
+          }
+          const updated: StoredApplication = { ...row, status: '付款失敗' }
+          failed.push(updated)
+          return updated
+        })
+      })
+      return failed
     }
 
     const submitApplication = (id: string) => {
@@ -480,6 +519,8 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
       updateOverview,
       completePayment,
       completePayments,
+      failPayment,
+      failPayments,
       submitApplication,
       approveApplication,
       rejectApplication,

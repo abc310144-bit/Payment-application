@@ -10,6 +10,7 @@ const statusClass: Record<BadgeStatus, string> = {
   審核不通過: 'status-rejected',
   審核通過: 'status-approved',
   待付款: 'status-pending-pay',
+  付款失敗: 'status-pay-failed',
   待核銷: 'status-pending-writeoff',
   部分核銷: 'status-partial',
   核銷完成: 'status-writeoff-done',

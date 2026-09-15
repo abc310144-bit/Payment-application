@@ -34,6 +34,11 @@
   color: #d46b08;
 }
 
+.status-pay-failed {
+  background: #fff1f0;
+  color: #cf1322;
+}
+
 .status-pending-writeoff {
   background: #f9f0ff;
   color: #722ed1;

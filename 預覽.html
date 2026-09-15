@@ -31,6 +31,7 @@
     h1 { margin: 0; font-size: 20px; font-weight: 700; }
     .btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 14px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; font-size: 13px; }
     .btn-primary { background: #2b5cff; color: #fff; }
+    .btn-danger { background: #fff; border-color: #ffccc7; color: #ff4d4f; }
     .btn-default { background: #fff; border-color: #d9d9d9; color: #434343; }
     .btn-link { height: auto; padding: 0 6px; background: transparent; color: #2b5cff; border: none; cursor: pointer; }
     .btn-link.danger { color: #ff4d4f; }
@@ -82,13 +83,14 @@
     .num { text-align: right; }
     .check-col { width: 40px; text-align: center; padding-left: 10px; padding-right: 10px; }
     .check-col input { width: 16px; height: 16px; margin: 0; cursor: pointer; }
-    .result-toolbar { margin-bottom: 8px; }
-    .ops { display: flex; flex-wrap: wrap; gap: 4px; min-width: 300px; }
+    .result-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+    .ops { display: flex; flex-wrap: wrap; gap: 4px; min-width: 360px; }
     .status { display: inline-flex; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
     .status-草稿 { background: #f0f0f0; color: #595959; }
     .status-待審核 { background: #e6f4ff; color: #1677ff; }
     .status-審核不通過 { background: #fff1f0; color: #ff4d4f; }
     .status-待付款 { background: #fff7e6; color: #d46b08; }
+    .status-付款失敗 { background: #fff1f0; color: #cf1322; }
     .status-待核銷 { background: #f9f0ff; color: #722ed1; }
     .status-部分核銷 { background: #fff0f6; color: #c41d7f; }
     .status-核銷完成 { background: #e6fffb; color: #08979c; }
@@ -253,7 +255,7 @@
   </div>
 <script>
 const TYPES = ['個人代墊報支','廠商實報實銷','廠商預付 / 訂金','通路費用 (通路後扣)','URMART 月結廠商']
-const STATUSES = ['草稿','待審核','審核不通過','待付款','待核銷','部分核銷','已完成','已作廢']
+const STATUSES = ['草稿','待審核','審核不通過','待付款','付款失敗','待核銷','部分核銷','已完成','已作廢']
 const CURRENCIES = ['臺幣TWD','美元USD','英镑GBP','澳元AUD','人民幣CNY','歐元EUR','港幣HK']
 function completesOnApprove(type){ return type === '通路費用 (通路後扣)' }
 const META = {
@@ -471,7 +473,7 @@ ROWS.forEach((r, i) => {
 })
 function canEdit(role, status){
   if (role === '出納') return false
-  if (status === '已作廢' || status === '已完成') return false
+  if (status === '已作廢' || status === '已完成' || status === '付款失敗') return false
   if (role === '財務') return true
   if (role === '建檔人') return status === '草稿' || status === '審核不通過'
   return false
@@ -481,7 +483,8 @@ function getRowOps(role, status, type){
   const canVoid = role !== '出納' && status !== '已完成' && status !== '已作廢' && (role === '財務' || status === '草稿' || status === '審核不通過')
   const canReview = role === '財務' && status === '待審核'
   const canWriteoff = role === '建檔人' && needsWriteoff(type) && (status === '待核銷' || status === '部分核銷')
-  const canPay = role === '出納' && status === '待付款' && !completesOnApprove(type)
+  const canPay = role === '出納' && (status === '待付款' || status === '付款失敗') && !completesOnApprove(type)
+  const canFail = role === '出納' && status === '待付款' && !completesOnApprove(type)
   return [
     ['edit','編輯', !canEditNow],
     ['view','檢視', false],
@@ -489,6 +492,7 @@ function getRowOps(role, status, type){
     ['review','進行審核', !canReview],
     ['writeoff','進行核銷', !canWriteoff],
     ['pay','完成付款', !canPay],
+    ['fail','付款失敗', !canFail],
   ]
 }
 
@@ -1271,7 +1275,7 @@ function renderList(){
       </div>
     </section>
     ${state.notice ? `<div class="notice">${state.notice}</div>` : ''}
-    ${canBatchPay ? '<div class="result-toolbar"><button type="button" class="btn btn-primary" id="btn-batch-pay">批量完成付款</button></div>' : ''}
+    ${canBatchPay ? '<div class="result-toolbar"><button type="button" class="btn btn-primary" id="btn-batch-pay">批量完成付款</button><button type="button" class="btn btn-danger" id="btn-batch-fail">批量付款失敗</button></div>' : ''}
     <div class="result-meta">共 ${rows.length} 筆</div>
     <div class="table-card"><div class="table-scroll"><table>
       <thead><tr>
@@ -1294,7 +1298,7 @@ function renderList(){
             <td>${dash(r.actual)}</td>
             <td>${reasonCell(r.reason)}</td>
             <td><span class="status status-${r.status}">${r.status}</span></td>
-            <td><div class="ops">${opsFor(r.status, r.type).map(([k,l,off]) => `<button class="btn-link ${k==='void'?'danger':''}" data-act="${k}" data-id="${r.id}" ${off?'disabled':''}>${l}</button>`).join('')}</div></td>
+            <td><div class="ops">${opsFor(r.status, r.type).map(([k,l,off]) => `<button class="btn-link ${k==='void'||k==='fail'?'danger':''}" data-act="${k}" data-id="${r.id}" ${off?'disabled':''}>${l}</button>`).join('')}</div></td>
           </tr>
         `).join('')}
       </tbody>
@@ -1390,6 +1394,19 @@ function completePays(rows, options){
   state.notice = writeoffCount
     ? '已完成付款 ' + rows.length + ' 筆。其中 ' + writeoffCount + ' 筆為事後核銷，核銷歷史頁籤已出現。'
     : '已完成付款 ' + rows.length + ' 筆'
+}
+
+function failPay(row, silent){
+  if (row.status !== '待付款' || completesOnApprove(row.type)) return
+  row.status = '付款失敗'
+  if (silent) return
+  state.notice = row.no + '：已標記付款失敗'
+}
+
+function failPays(rows){
+  rows.forEach((row) => failPay(row, true))
+  state.selectedIds = {}
+  state.notice = '已標記付款失敗 ' + rows.length + ' 筆'
 }
 
 function nextThursday(iso){
@@ -1572,7 +1589,7 @@ function renderOverview(){
   `
 }
 function renderDetailsTab(row){
-  const parentLocked = row.status === '已作廢' || row.status === '已完成'
+  const parentLocked = row.status === '已作廢' || row.status === '已完成' || row.status === '付款失敗'
   const canAdd = canAddVoucher(state.role, row.status) && !parentLocked
   const hasDraft = row.vouchers.some((item) => item.status === '草稿')
   const canReview = state.role === '財務' && row.status === '待審核'
@@ -2268,15 +2285,16 @@ function render(){
     bindReasonBubbles()
     bindListChecks()
     const batchBtn = document.getElementById('btn-batch-pay')
+    const requireSameCurrency = (targets) => {
+      const currencies = Array.from(new Set(targets.map((row) => rowCurrency(row))))
+      if (currencies.length === 1) return true
+      alert('需所有申請皆為相同幣別才可批量操作')
+      return false
+    }
     if (batchBtn) batchBtn.onclick = () => {
       if (state.role !== '出納') return
       const targets = selectedPayRows()
-      if (!targets.length) return
-      const currencies = Array.from(new Set(targets.map((row) => rowCurrency(row))))
-      if (currencies.length !== 1) {
-        alert('需所有申請皆為相同幣別才可批量操作')
-        return
-      }
+      if (!targets.length || !requireSameCurrency(targets)) return
       state.batchPayOpen = true
       state.payOpen = false
       state.payTargetId = ''
@@ -2284,6 +2302,14 @@ function render(){
       state.payDate = today()
       state.payDateError = ''
       state.payError = ''
+      render()
+    }
+    const batchFailBtn = document.getElementById('btn-batch-fail')
+    if (batchFailBtn) batchFailBtn.onclick = () => {
+      if (state.role !== '出納') return
+      const targets = selectedPayRows()
+      if (!targets.length || !requireSameCurrency(targets)) return
+      failPays(targets)
       render()
     }
     app.querySelectorAll('[data-act]').forEach(btn => {
@@ -2338,6 +2364,11 @@ function render(){
           state.payDate = today()
           state.payDateError = ''
           state.payError = ''
+          render()
+          return
+        }
+        if (act === 'fail') {
+          failPay(row)
           render()
           return
         }

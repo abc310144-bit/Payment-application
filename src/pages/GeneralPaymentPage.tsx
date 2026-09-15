@@ -73,6 +73,8 @@ export function GeneralPaymentPage() {
     applications,
     completePayment,
     completePayments,
+    failPayment,
+    failPayments,
     voidApplication,
   } = useApplications()
   const [draft, setDraft] = useState<Filters>(emptyFilters)
@@ -114,6 +116,12 @@ export function GeneralPaymentPage() {
     selectedRows.every(
       (row) => row.status === '待付款' && !completesOnApprove(row.paymentType),
     )
+  const sameSelectedCurrency = () => {
+    const currencies = new Set(selectedRows.map(rowCurrency))
+    if (currencies.size === 1) return true
+    window.alert('需所有申請皆為相同幣別才可批量操作')
+    return false
+  }
   const payModalTargets = payTarget ? [payTarget] : selectedRows
   const payModalOpen = Boolean(payTarget) || batchPayOpen
   const payModalNeedRate = payModalTargets.some((row) =>
@@ -159,14 +167,16 @@ export function GeneralPaymentPage() {
   }
 
   const handleBatchPay = () => {
-    if (!canBatchPay) return
-    const currencies = new Set(selectedRows.map(rowCurrency))
-    if (currencies.size !== 1) {
-      window.alert('需所有申請皆為相同幣別才可批量操作')
-      return
-    }
+    if (!canBatchPay || !sameSelectedCurrency()) return
     setPayTarget(null)
     setBatchPayOpen(true)
+  }
+
+  const handleBatchFail = () => {
+    if (!canBatchPay || !sameSelectedCurrency()) return
+    const failed = failPayments(selectedRows.map((row) => row.id))
+    setNotice(`已標記付款失敗 ${failed.length} 筆`)
+    setSelectedIds([])
   }
 
   const handleAction = (action: string, row: PaymentApplication) => {
@@ -193,6 +203,11 @@ export function GeneralPaymentPage() {
       const app = applications.find((item) => item.id === row.id)
       setBatchPayOpen(false)
       setPayTarget(app ?? null)
+      return
+    }
+    if (action === 'fail') {
+      const updated = failPayment(row.id)
+      if (updated) setNotice(describeAction('fail', updated))
       return
     }
     setNotice(describeAction(action, row))
@@ -412,6 +427,13 @@ export function GeneralPaymentPage() {
             onClick={handleBatchPay}
           >
             批量完成付款
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={handleBatchFail}
+          >
+            批量付款失敗
           </button>
         </div>
       )}

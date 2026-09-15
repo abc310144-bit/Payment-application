@@ -85,8 +85,9 @@ export function VoucherDetailsPanel({ app }: Props) {
   const canAdd = canAddVoucherDetail(role, app.status)
   const hasDraft = app.vouchers.some((item) => item.status === '草稿')
   const canReview = role === '財務' && app.status === '待審核'
-  /** 已完成／已作廢：除檢視外不可操作 */
-  const parentLocked = app.status === '已作廢' || app.status === '已完成'
+  /** 已完成／已作廢／付款失敗：除檢視外不可操作 */
+  const parentLocked =
+    app.status === '已作廢' || app.status === '已完成' || app.status === '付款失敗'
   const hasAnyDetail = app.vouchers.length > 0
   const invoiceSum = invoiceAmountSum(app.vouchers.map((item) => item.payAmount))
   const invoiceTarget = monthlyTotals?.companyInvoiceAmount ?? 0

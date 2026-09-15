@@ -68,7 +68,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  min-width: 300px;
+  min-width: 360px;
 }
 
 .btn-link.danger {
