@@ -173,7 +173,7 @@ export function GeneralPaymentPage() {
   }
 
   const handleBatchFail = () => {
-    if (!canBatchPay || !sameSelectedCurrency()) return
+    if (!canBatchPay) return
     const failed = failPayments(selectedRows.map((row) => row.id))
     setNotice(`已標記付款失敗 ${failed.length} 筆`)
     setSelectedIds([])

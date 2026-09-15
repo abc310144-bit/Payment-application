@@ -2308,7 +2308,7 @@ function render(){
     if (batchFailBtn) batchFailBtn.onclick = () => {
       if (state.role !== '出納') return
       const targets = selectedPayRows()
-      if (!targets.length || !requireSameCurrency(targets)) return
+      if (!targets.length) return
       failPays(targets)
       render()
     }
