@@ -252,7 +252,7 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
       setApplications((prev) => {
         paid.length = 0
         return prev.map((row) => {
-          if (!idSet.has(row.id) || !canFinishPayment(row) || row.status !== '待付款') {
+          if (!idSet.has(row.id) || !canFinishPayment(row)) {
             return row
           }
           const needWriteoff = needsWriteoffHistory(row.paymentType)

@@ -15,7 +15,6 @@ import {
   CURRENCIES,
   PAYMENT_STATUSES,
   PAYMENT_TYPES,
-  completesOnApprove,
   isForeignCurrency,
   type CurrencyCode,
   type PaymentApplication,
@@ -28,7 +27,11 @@ import {
   type DateQuery,
 } from '../utils/dateQuery'
 import { fuzzyMatch } from '../utils/fuzzy'
-import { canCompletePayment, describeAction } from '../utils/operations'
+import {
+  canMarkPaymentFailed,
+  canPayApplication,
+  describeAction,
+} from '../utils/operations'
 import { needsWriteoffHistory } from '../utils/writeoff'
 import './GeneralPaymentPage.css'
 
@@ -111,10 +114,14 @@ export function GeneralPaymentPage() {
 
   const selectedRows = rows.filter((row) => selectedIds.includes(row.id))
   const canBatchPay =
-    canCompletePayment(role) &&
     selectedRows.length > 0 &&
-    selectedRows.every(
-      (row) => row.status === '待付款' && !completesOnApprove(row.paymentType),
+    selectedRows.every((row) =>
+      canPayApplication(role, row.status, row.paymentType),
+    )
+  const canBatchFail =
+    selectedRows.length > 0 &&
+    selectedRows.every((row) =>
+      canMarkPaymentFailed(role, row.status, row.paymentType),
     )
   const sameSelectedCurrency = () => {
     const currencies = new Set(selectedRows.map(rowCurrency))
@@ -173,7 +180,7 @@ export function GeneralPaymentPage() {
   }
 
   const handleBatchFail = () => {
-    if (!canBatchPay) return
+    if (!canBatchFail) return
     const failed = failPayments(selectedRows.map((row) => row.id))
     setNotice(`已標記付款失敗 ${failed.length} 筆`)
     setSelectedIds([])
@@ -419,22 +426,26 @@ export function GeneralPaymentPage() {
 
       {notice && <div className="notice">{notice}</div>}
 
-      {canBatchPay && (
+      {(canBatchPay || canBatchFail) && (
         <div className="result-toolbar">
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleBatchPay}
-          >
-            批量完成付款
-          </button>
-          <button
-            type="button"
-            className="btn btn-danger"
-            onClick={handleBatchFail}
-          >
-            批量付款失敗
-          </button>
+          {canBatchPay && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleBatchPay}
+            >
+              批量完成付款
+            </button>
+          )}
+          {canBatchFail && (
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={handleBatchFail}
+            >
+              批量付款失敗
+            </button>
+          )}
         </div>
       )}
       <div className="result-meta">共 {rows.length} 筆</div>

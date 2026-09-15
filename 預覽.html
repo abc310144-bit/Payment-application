@@ -1245,7 +1245,8 @@ function renderList(){
     if (!visibleIds.includes(id)) delete state.selectedIds[id]
   })
   const selectedRows = rows.filter((r) => state.selectedIds[r.id])
-  const canBatchPay = state.role === '出納' && selectedRows.length > 0 && selectedRows.every((r) => r.status === '待付款' && !completesOnApprove(r.type))
+  const canBatchPay = state.role === '出納' && selectedRows.length > 0 && selectedRows.every((r) => (r.status === '待付款' || r.status === '付款失敗') && !completesOnApprove(r.type))
+  const canBatchFail = state.role === '出納' && selectedRows.length > 0 && selectedRows.every((r) => r.status === '待付款' && !completesOnApprove(r.type))
   return `
     <div class="page-header">
       <h1>一般付款</h1>
@@ -1275,7 +1276,7 @@ function renderList(){
       </div>
     </section>
     ${state.notice ? `<div class="notice">${state.notice}</div>` : ''}
-    ${canBatchPay ? '<div class="result-toolbar"><button type="button" class="btn btn-primary" id="btn-batch-pay">批量完成付款</button><button type="button" class="btn btn-danger" id="btn-batch-fail">批量付款失敗</button></div>' : ''}
+    ${canBatchPay || canBatchFail ? `<div class="result-toolbar">${canBatchPay ? '<button type="button" class="btn btn-primary" id="btn-batch-pay">批量完成付款</button>' : ''}${canBatchFail ? '<button type="button" class="btn btn-danger" id="btn-batch-fail">批量付款失敗</button>' : ''}</div>` : ''}
     <div class="result-meta">共 ${rows.length} 筆</div>
     <div class="table-card"><div class="table-scroll"><table>
       <thead><tr>
@@ -1325,6 +1326,9 @@ function renderAuditFileModal(){
 }
 
 function selectedPayRows(){
+  return ROWS.filter((r) => state.selectedIds[r.id] && (r.status === '待付款' || r.status === '付款失敗') && !completesOnApprove(r.type))
+}
+function selectedFailRows(){
   return ROWS.filter((r) => state.selectedIds[r.id] && r.status === '待付款' && !completesOnApprove(r.type))
 }
 
@@ -2307,7 +2311,7 @@ function render(){
     const batchFailBtn = document.getElementById('btn-batch-fail')
     if (batchFailBtn) batchFailBtn.onclick = () => {
       if (state.role !== '出納') return
-      const targets = selectedPayRows()
+      const targets = selectedFailRows()
       if (!targets.length) return
       failPays(targets)
       render()

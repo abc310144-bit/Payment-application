@@ -51,6 +51,7 @@ export function canMarkPaymentFailed(
   )
 }
 
+/** 單筆／批量完成付款：出納可對待付款、付款失敗操作。 */
 export function canPayApplication(
   role: UserRole,
   status: PaymentStatus,
