@@ -13,7 +13,8 @@ import {
   isInvoiceOnlyType,
   PAYMENT_TYPE_META,
 } from '../types/payment'
-import type { VoucherDetail } from '../types/voucher'
+import { dashOrValue, type VoucherDetail } from '../types/voucher'
+import { formatDateDisplay } from '../utils/expectedPaymentDate'
 import { formatAmount, formatMoney } from '../utils/money'
 import {
   canMarkPaymentFailed,
@@ -21,6 +22,7 @@ import {
 } from '../utils/operations'
 import { getPayeeDisplayName } from '../utils/payee'
 import './ApplicationSummaryPanel.css'
+import './VoucherDetailsPanel.css'
 
 interface Props {
   app: StoredApplication
@@ -48,6 +50,7 @@ export function ApplicationSummaryPanel({ app }: Props) {
   const canFail = canMarkPaymentFailed(role, app.status, app.paymentType)
   const invoiceOnly = isInvoiceOnlyType(app.paymentType)
   const needRate = isForeignCurrency(currency)
+  const showExchangeRate = isForeignCurrency(currency)
 
   return (
     <div className="summary-panel">
@@ -138,38 +141,62 @@ export function ApplicationSummaryPanel({ app }: Props) {
         {app.vouchers.length === 0 ? (
           <p className="summary-empty">尚未新增憑證明細。</p>
         ) : (
-          <div className="summary-table-wrap">
-            <table className="summary-table">
+          <div className="details-table-wrap">
+            <table className="details-table">
               <thead>
                 <tr>
                   <th>ID</th>
+                  <th>廠商統編</th>
                   <th>款項用途</th>
                   {!invoiceOnly && <th>備註單號</th>}
                   <th>憑證樣式</th>
+                  <th>發票格式</th>
+                  <th>發票號碼(憑證號碼)</th>
+                  <th>發票日期</th>
+                  <th>應稅 / 未稅</th>
+                  <th>未稅金額</th>
+                  <th>稅額</th>
+                  {showExchangeRate && <th>付款匯率</th>}
                   <th>付款金額</th>
                   <th>狀態</th>
                   <th>操作</th>
                 </tr>
               </thead>
               <tbody>
-                {app.vouchers.map((row) => (
+                {app.vouchers.map((row, idx) => (
                   <tr key={row.id}>
-                    <td className="mono">{row.id}</td>
+                    <td>{idx + 1}</td>
+                    <td>{row.vendorTaxId}</td>
                     <td>{row.purpose}</td>
-                    {!invoiceOnly && <td>{row.remarkNo || '-'}</td>}
+                    {!invoiceOnly && <td>{row.remarkNo}</td>}
                     <td>{row.voucherStyle}</td>
-                    <td className="num">{formatAmount(row.payAmount, currency)}</td>
+                    <td>{dashOrValue(row.invoiceFormat)}</td>
+                    <td>{dashOrValue(row.invoiceNo)}</td>
+                    <td>{dashOrValue(formatDateDisplay(row.invoiceDate))}</td>
+                    <td>{row.taxable}</td>
+                    <td className="num">
+                      {formatAmount(row.untaxedAmount, currency)}
+                    </td>
+                    <td className="num">
+                      {formatAmount(row.taxAmount, currency)}
+                    </td>
+                    {showExchangeRate && (
+                      <td className="num">
+                        {formatExchangeRate(app.paymentExchangeRate)}
+                      </td>
+                    )}
+                    <td className="num">
+                      {formatAmount(row.payAmount, currency)}
+                    </td>
                     <td>
                       <StatusBadge status={row.status} />
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="btn-link"
-                        onClick={() => setViewing(row)}
-                      >
-                        檢視
-                      </button>
+                      <div className="details-ops">
+                        <button type="button" onClick={() => setViewing(row)}>
+                          檢視
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
