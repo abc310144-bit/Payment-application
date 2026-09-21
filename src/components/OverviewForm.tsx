@@ -6,7 +6,6 @@ import {
   findEmployeeForApplicant,
   isPettyCashType,
 } from '../data/mockEmployees'
-import { formatAmount } from '../utils/money'
 import { defaultPayeeId } from '../utils/payee'
 import {
   CURRENCIES,
@@ -93,6 +92,8 @@ interface Props {
   showTitle?: boolean
   submitLabel?: string
   onSubmit?: (form: PaymentOverviewForm) => void
+  /** 左下「返回」：回上一階 */
+  onBack?: () => void
 }
 
 export function OverviewForm({
@@ -102,6 +103,7 @@ export function OverviewForm({
   showTitle = true,
   submitLabel = '儲存',
   onSubmit,
+  onBack,
 }: Props) {
   const [form, setForm] = useState<PaymentOverviewForm>(
     () => initial ?? buildInitialOverviewForm(),
@@ -474,32 +476,6 @@ export function OverviewForm({
             </div>
           </div>
 
-          <div className="form-row">
-            <label className="form-label" htmlFor="totalAmount">
-              總付款金額（含稅）
-            </label>
-            <div className="form-control">
-              <input
-                id="totalAmount"
-                value={
-                  umMonthly && form.monthlyTotals
-                    ? formatAmount(
-                        form.monthlyTotals.companyInvoiceAmount,
-                        form.currency,
-                      )
-                    : formatAmount(form.totalAmount ?? 0, form.currency)
-                }
-                disabled
-                readOnly
-              />
-              {umMonthly && (
-                <p className="field-hint">
-                  帶入「貴公司開立發票金額(含稅)」。選完廠商與結算月後由月結資料帶入，不可編輯。
-                </p>
-              )}
-            </div>
-          </div>
-
           {!channelFee && (
           <div className="form-row">
             <label className="form-label required" htmlFor="expectedPaymentDate">
@@ -558,11 +534,26 @@ export function OverviewForm({
           )}
         </div>
 
-        {!locked && onSubmit && (
+        {(onBack || (!locked && onSubmit)) && (
           <div className="form-footer">
-            <button type="submit" className="btn btn-primary btn-step">
-              {submitLabel}
-            </button>
+            {onBack ? (
+              <button
+                type="button"
+                className="btn btn-default btn-step"
+                onClick={onBack}
+              >
+                返回
+              </button>
+            ) : (
+              <span />
+            )}
+            <div className="form-footer-right">
+              {!locked && onSubmit && (
+                <button type="submit" className="btn btn-primary btn-step">
+                  {submitLabel}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </form>

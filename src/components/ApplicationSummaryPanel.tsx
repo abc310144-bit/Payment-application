@@ -118,7 +118,7 @@ export function ApplicationSummaryPanel({ app }: Props) {
             <dd>{formatExchangeRate(app.paymentExchangeRate)}</dd>
           </div>
           <div>
-            <dt>總金額</dt>
+            <dt>總付款金額（含稅）</dt>
             <dd>{formatMoney(app.totalAmount, currency)}</dd>
           </div>
           {app.rejectReason ? (

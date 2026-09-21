@@ -53,9 +53,19 @@
 
 .form-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
   margin-top: 20px;
   padding-top: 4px;
+}
+
+.form-footer-right {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .btn-step {
