@@ -56,14 +56,9 @@ export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
 
   return (
     <div className="workspace">
-      <div className="page-header">
-        <div>
-          <h1>付款申請單</h1>
-          <p className="sub">
-            單號：{app.applicationNo}　狀態：{app.status}
-          </p>
-        </div>
-        <Link to="/" className="btn btn-default">
+      <div className="workspace-stepper-bar">
+        <ApplicationStepper current={step} applicationId={app.id} />
+        <Link to="/" className="btn btn-default workspace-back">
           返回列表
         </Link>
       </div>
@@ -92,8 +87,6 @@ export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
           </>
         )}
       </div>
-
-      <ApplicationStepper current={step} applicationId={app.id} />
 
       <div className="workspace-panel">
         {tab === 'overview' && (

@@ -35,7 +35,12 @@ export function PaymentOverviewPage() {
 
   return (
     <div className="create-wizard">
-      <ApplicationStepper current={1} disableFuture />
+      <div className="workspace-stepper-bar">
+        <ApplicationStepper current={1} disableFuture />
+        <Link to="/" className="btn btn-default workspace-back">
+          返回列表
+        </Link>
+      </div>
       <OverviewForm
         showTitle={false}
         title="建立基本資料"

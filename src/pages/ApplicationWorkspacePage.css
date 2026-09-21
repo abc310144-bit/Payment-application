@@ -1,27 +1,17 @@
-.workspace .page-header {
+.workspace-stepper-bar {
+  position: relative;
   display: flex;
+  justify-content: center;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  min-height: 44px;
+  padding: 0 108px;
 }
 
-.workspace h1 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.workspace h2 {
-  margin: 0 0 16px;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.workspace .sub {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: #8c8c8c;
+.workspace-back {
+  position: absolute;
+  top: 4px;
+  right: 0;
 }
 
 .workspace-panel {
@@ -112,6 +102,11 @@
   padding: 20px 24px 28px;
 }
 
+.create-wizard .workspace-stepper-bar {
+  padding: 0;
+  margin-bottom: 20px;
+}
+
 .create-wizard .overview-page {
   max-width: none;
 }
@@ -122,11 +117,16 @@
   padding: 12px 0 0;
 }
 
-.create-wizard .page-header {
-  margin-bottom: 8px;
-}
+@media (max-width: 900px) {
+  .workspace-stepper-bar {
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    gap: 12px;
+  }
 
-.create-wizard .page-header h1 {
-  font-size: 16px;
-  font-weight: 600;
+  .workspace-back {
+    position: static;
+    align-self: flex-end;
+  }
 }
