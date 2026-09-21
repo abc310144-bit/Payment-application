@@ -6,6 +6,7 @@ import { useRole } from '../context/RoleContext'
 import type { PaymentOverviewForm } from '../types/payment'
 import { getPayeeDisplayName } from '../utils/payee'
 import './PaymentOverviewPage.css'
+import './ApplicationWorkspacePage.css'
 
 export function PaymentOverviewPage() {
   const navigate = useNavigate()
@@ -36,6 +37,7 @@ export function PaymentOverviewPage() {
     <div className="create-wizard">
       <ApplicationStepper current={1} disableFuture />
       <OverviewForm
+        showTitle={false}
         title="建立基本資料"
         submitLabel="儲存此分頁"
         onSubmit={handleSubmit}

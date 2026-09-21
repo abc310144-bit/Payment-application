@@ -95,30 +95,32 @@ export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
 
       <ApplicationStepper current={step} applicationId={app.id} />
 
-      {tab === 'overview' && (
-        <OverviewTab
-          key={`${app.id}-${role}-${app.status}`}
-          app={app}
-          writable={writable}
-          onSaved={() => navigate(`/applications/${app.id}/details`)}
-        />
-      )}
-      {tab === 'details' && (
-        <div className="step-details">
-          <VoucherDetailsPanel app={app} />
-          <div className="step-footer">
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => navigate(`/applications/${app.id}/summary`)}
-            >
-              儲存此分頁
-            </button>
+      <div className="workspace-panel">
+        {tab === 'overview' && (
+          <OverviewTab
+            key={`${app.id}-${role}-${app.status}`}
+            app={app}
+            writable={writable}
+            onSaved={() => navigate(`/applications/${app.id}/details`)}
+          />
+        )}
+        {tab === 'details' && (
+          <div className="step-details">
+            <VoucherDetailsPanel app={app} />
+            <div className="step-footer">
+              <button
+                type="button"
+                className="btn btn-primary btn-step"
+                onClick={() => navigate(`/applications/${app.id}/summary`)}
+              >
+                儲存此分頁
+              </button>
+            </div>
           </div>
-        </div>
-      )}
-      {tab === 'summary' && <ApplicationSummaryPanel app={app} />}
-      {tab === 'writeoff' && <WriteoffHistoryPanel app={app} />}
+        )}
+        {tab === 'summary' && <ApplicationSummaryPanel app={app} />}
+        {tab === 'writeoff' && <WriteoffHistoryPanel app={app} />}
+      </div>
 
       {showWriteoff && tab !== 'writeoff' && (
         <div className="writeoff-entry">
@@ -195,7 +197,7 @@ function OverviewTab({
     <OverviewForm
       initial={toForm(app)}
       readOnly={!writable}
-      showTitle
+      showTitle={false}
       title="建立基本資料"
       submitLabel="儲存此分頁"
       onSubmit={writable ? handleSubmit : undefined}

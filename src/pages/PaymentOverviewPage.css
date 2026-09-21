@@ -51,6 +51,20 @@
   padding: 28px 32px 36px;
 }
 
+.form-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 4px;
+}
+
+.btn-step {
+  min-width: 120px;
+  height: 36px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 160px minmax(0, 420px);
@@ -95,8 +109,8 @@
 
 .form-control input:focus,
 .form-control select:focus {
-  border-color: #2b5cff;
-  box-shadow: 0 0 0 2px rgba(43, 92, 255, 0.12);
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
 }
 
 .form-control input:disabled,

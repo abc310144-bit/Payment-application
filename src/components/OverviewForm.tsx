@@ -273,14 +273,9 @@ export function OverviewForm({
   return (
     <div className="overview-page">
       <form onSubmit={handleSubmit}>
-        {(showTitle || (!locked && onSubmit)) && (
+        {showTitle && (
           <div className="page-header">
-            {showTitle ? <h1>{title}</h1> : <h2 className="overview-embed-title">{title}</h2>}
-            {!locked && onSubmit && (
-              <button type="submit" className="btn btn-primary">
-                {submitLabel}
-              </button>
-            )}
+            <h1>{title}</h1>
           </div>
         )}
 
@@ -562,6 +557,14 @@ export function OverviewForm({
           </div>
           )}
         </div>
+
+        {!locked && onSubmit && (
+          <div className="form-footer">
+            <button type="submit" className="btn btn-primary btn-step">
+              {submitLabel}
+            </button>
+          </div>
+        )}
       </form>
     </div>
   )

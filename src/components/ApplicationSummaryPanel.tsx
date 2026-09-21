@@ -48,35 +48,7 @@ export function ApplicationSummaryPanel({ app }: Props) {
 
   return (
     <div className="summary-panel">
-      <div className="summary-toolbar">
-        <h2>付款申請總覽</h2>
-        <div className="summary-actions">
-          {canPay && (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => setPayOpen(true)}
-            >
-              完成付款
-            </button>
-          )}
-          {canFail && (
-            <button
-              type="button"
-              className="btn btn-danger"
-              onClick={() => {
-                if (!window.confirm(`確定將 ${app.applicationNo} 標記為付款失敗？`)) {
-                  return
-                }
-                const updated = failPayment(app.id)
-                if (updated) setNotice(`已標記付款失敗 ${updated.applicationNo}`)
-              }}
-            >
-              付款失敗
-            </button>
-          )}
-        </div>
-      </div>
+      <h2>付款申請總覽</h2>
 
       {notice && <div className="summary-notice">{notice}</div>}
 
@@ -193,6 +165,35 @@ export function ApplicationSummaryPanel({ app }: Props) {
           </div>
         )}
       </section>
+
+      {(canPay || canFail) && (
+        <div className="summary-footer">
+          {canFail && (
+            <button
+              type="button"
+              className="btn btn-danger btn-step"
+              onClick={() => {
+                if (!window.confirm(`確定將 ${app.applicationNo} 標記為付款失敗？`)) {
+                  return
+                }
+                const updated = failPayment(app.id)
+                if (updated) setNotice(`已標記付款失敗 ${updated.applicationNo}`)
+              }}
+            >
+              付款失敗
+            </button>
+          )}
+          {canPay && (
+            <button
+              type="button"
+              className="btn btn-primary btn-step"
+              onClick={() => setPayOpen(true)}
+            >
+              完成付款
+            </button>
+          )}
+        </div>
+      )}
 
       {payOpen && (
         <CompletePaymentModal

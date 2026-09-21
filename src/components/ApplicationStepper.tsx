@@ -37,7 +37,11 @@ export function ApplicationStepper({
 
         return (
           <div className="app-step-wrap" key={item.step}>
-            {index > 0 && <span className="app-step-sep" aria-hidden="true" />}
+            {index > 0 && (
+              <span className="app-step-sep" aria-hidden="true">
+                &gt;
+              </span>
+            )}
             {applicationId && !locked ? (
               <Link
                 to={`/applications/${applicationId}/${item.path}`}

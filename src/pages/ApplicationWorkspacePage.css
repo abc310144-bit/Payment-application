@@ -24,11 +24,18 @@
   color: #8c8c8c;
 }
 
+.workspace-panel {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 20px 24px 28px;
+}
+
 .logic-hint {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   padding: 10px 12px;
-  background: #f0f7ff;
-  border: 1px solid #c6ddff;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
   border-radius: 6px;
   font-size: 13px;
   line-height: 1.6;
@@ -54,85 +61,38 @@
   color: #8c8c8c;
 }
 
-.details-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+.step-details .overview-page,
+.workspace-panel .overview-page {
+  max-width: none;
 }
 
-.details-head h2 {
-  margin: 0;
-}
-
-.tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid #e8e8e8;
-  margin-bottom: 16px;
-}
-
-.tab {
+.workspace-panel .overview-card {
   border: none;
-  background: transparent;
-  padding: 10px 16px;
-  font-size: 14px;
-  color: #8c8c8c;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-}
-
-.tab.active {
-  color: #2b5cff;
-  font-weight: 600;
-  border-bottom-color: #2b5cff;
+  border-radius: 0;
+  padding: 8px 0 0;
 }
 
 .step-footer {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+  margin-top: 24px;
+  padding-top: 4px;
+}
+
+.step-footer .btn-step {
+  min-width: 120px;
+  height: 36px;
+  padding: 0 20px;
+  font-size: 14px;
 }
 
 .writeoff-entry {
-  margin-top: 20px;
-  padding-top: 12px;
-  border-top: 1px dashed #e8e8e8;
+  margin-top: 16px;
   font-size: 13px;
 }
 
 .writeoff-entry a {
-  color: #2b5cff;
-}
-
-.summary-card {
-  background: #fff;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  padding: 20px 24px;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 24px;
-  margin: 0;
-}
-
-.summary-grid dt {
-  font-size: 12px;
-  color: #8c8c8c;
-  margin-bottom: 4px;
-}
-
-.summary-grid dd {
-  margin: 0;
-  font-size: 14px;
-  color: #1f1f1f;
+  color: #1890ff;
 }
 
 .placeholder-note {
@@ -145,8 +105,28 @@
   line-height: 1.6;
 }
 
-@media (max-width: 720px) {
-  .summary-grid {
-    grid-template-columns: 1fr;
-  }
+.create-wizard {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 20px 24px 28px;
+}
+
+.create-wizard .overview-page {
+  max-width: none;
+}
+
+.create-wizard .overview-card {
+  border: none;
+  border-radius: 0;
+  padding: 12px 0 0;
+}
+
+.create-wizard .page-header {
+  margin-bottom: 8px;
+}
+
+.create-wizard .page-header h1 {
+  font-size: 16px;
+  font-weight: 600;
 }
