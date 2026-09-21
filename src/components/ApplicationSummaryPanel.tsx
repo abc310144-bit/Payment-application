@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CompletePaymentModal } from './CompletePaymentModal'
 import { StatusBadge } from './StatusBadge'
+import { ViewFilesModal } from './ViewFilesModal'
 import {
   useApplications,
   type StoredApplication,
@@ -12,6 +13,7 @@ import {
   isInvoiceOnlyType,
   PAYMENT_TYPE_META,
 } from '../types/payment'
+import type { VoucherDetail } from '../types/voucher'
 import { formatAmount, formatMoney } from '../utils/money'
 import {
   canMarkPaymentFailed,
@@ -33,6 +35,7 @@ export function ApplicationSummaryPanel({ app }: Props) {
   const { role } = useRole()
   const { completePayment, failPayment } = useApplications()
   const [payOpen, setPayOpen] = useState(false)
+  const [viewing, setViewing] = useState<VoucherDetail | null>(null)
   const [notice, setNotice] = useState('')
 
   const overview = app.overview
@@ -145,6 +148,7 @@ export function ApplicationSummaryPanel({ app }: Props) {
                   <th>憑證樣式</th>
                   <th>付款金額</th>
                   <th>狀態</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -157,6 +161,15 @@ export function ApplicationSummaryPanel({ app }: Props) {
                     <td className="num">{formatAmount(row.payAmount, currency)}</td>
                     <td>
                       <StatusBadge status={row.status} />
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-link"
+                        onClick={() => setViewing(row)}
+                      >
+                        檢視
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -207,6 +220,14 @@ export function ApplicationSummaryPanel({ app }: Props) {
             }
             setPayOpen(false)
           }}
+        />
+      )}
+
+      {viewing && (
+        <ViewFilesModal
+          voucherFile={viewing.voucherFile}
+          attachments={viewing.attachments}
+          onClose={() => setViewing(null)}
         />
       )}
     </div>
