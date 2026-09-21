@@ -118,11 +118,10 @@ function renderFormRows(details: VoucherDetail[], currency?: string | null) {
     for (const line of lines) {
       const c = calcLineContribution(
         detail.taxable,
-        line.taxable,
         line.amount,
         decimal,
       )
-      const taxFlag = detail.taxable === '未稅' ? '未稅' : line.taxable
+      const taxFlag = detail.taxable || line.taxable || '-'
       totalUntaxed += c.untaxed
       totalTax += c.tax
       totalPay += c.pay

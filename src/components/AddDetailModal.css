@@ -148,6 +148,11 @@
   align-items: start;
 }
 
+.line-head-simple,
+.line-row-simple {
+  grid-template-columns: minmax(0, 1.6fr) 140px 76px;
+}
+
 .line-head {
   font-size: 12px;
   color: #8c8c8c;

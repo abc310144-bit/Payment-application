@@ -11,26 +11,32 @@ function roundByMode(n: number, decimal?: boolean) {
   return decimal ? roundMoney(n) : roundInt(n)
 }
 
-/** 單筆細項對未稅／稅額／付款金額的貢獻 */
+/** 零稅率／免稅／未選：計算比照舊「未稅」（稅額 0） */
+export function isExemptTaxMode(flag: TaxFlag | '' | null | undefined) {
+  return flag !== '應稅'
+}
+
+/** 舊資料「未稅」對應為「免稅」 */
+export function normalizeTaxFlag(
+  flag: string | null | undefined,
+): TaxFlag | '' {
+  if (flag === '未稅') return '免稅'
+  if (flag === '應稅' || flag === '零稅率' || flag === '免稅') return flag
+  return ''
+}
+
+/** 單筆細項對未稅／稅額／付款金額的貢獻（細項稅別跟主檔） */
 export function calcLineContribution(
-  mainTaxable: TaxFlag,
-  lineTaxable: TaxFlag,
+  mainTaxable: TaxFlag | '',
   amount: number | string,
   decimal?: boolean,
 ) {
   const amt = parseAmount(amount)
   const round = (n: number) => roundByMode(n, decimal)
-  const effectiveLine: TaxFlag =
-    mainTaxable === '未稅' ? '未稅' : lineTaxable
 
-  if (mainTaxable === '未稅' || effectiveLine === '未稅') {
-    if (mainTaxable === '未稅') {
-      const pay = round(amt)
-      return { untaxed: pay, tax: 0, pay }
-    }
-    const untaxed = round(amt)
-    const pay = round(amt * TAX_RATE)
-    return { untaxed, tax: round(pay - untaxed), pay }
+  if (isExemptTaxMode(mainTaxable)) {
+    const pay = round(amt)
+    return { untaxed: pay, tax: 0, pay }
   }
 
   const pay = round(amt)
@@ -39,19 +45,14 @@ export function calcLineContribution(
 }
 
 export function calcVoucherTotals(
-  mainTaxable: TaxFlag,
-  lines: Pick<VoucherLineItem, 'taxable' | 'amount'>[],
+  mainTaxable: TaxFlag | '',
+  lines: Pick<VoucherLineItem, 'amount'>[],
   decimal?: boolean,
 ) {
   let untaxedAmount = 0
   let payAmount = 0
   for (const line of lines) {
-    const c = calcLineContribution(
-      mainTaxable,
-      line.taxable,
-      line.amount,
-      decimal,
-    )
+    const c = calcLineContribution(mainTaxable, line.amount, decimal)
     untaxedAmount += c.untaxed
     payAmount += c.pay
   }

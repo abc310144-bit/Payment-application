@@ -4,7 +4,7 @@ import {
   type StoredApplication,
 } from '../context/ApplicationContext'
 import { useRole } from '../context/RoleContext'
-import type { VoucherDetail, WritebackRecord } from '../types/voucher'
+import { dashOrValue, type VoucherDetail, type WritebackRecord } from '../types/voucher'
 import { formatAmount } from '../utils/money'
 import {
   formatWritebackLabel,
@@ -60,7 +60,7 @@ export function WriteoffHistoryPanel({ app }: { app: StoredApplication }) {
           <thead>
             <tr>
               <th>明細</th>
-              <th>應稅 / 未稅</th>
+              <th>是否應稅</th>
               <th>金額</th>
               <th>操作</th>
             </tr>
@@ -83,7 +83,7 @@ export function WriteoffHistoryPanel({ app }: { app: StoredApplication }) {
                     <td>
                       {idx + 1}. {row.purpose}
                     </td>
-                    <td>{row.taxable}</td>
+                    <td>{dashOrValue(row.taxable)}</td>
                     <td className="num">{formatAmount(row.payAmount, currency)}</td>
                     <td>
                       <div className="writeoff-ops">

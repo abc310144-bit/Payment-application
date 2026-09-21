@@ -251,7 +251,7 @@ export function VoucherDetailsPanel({ app }: Props) {
               <th>發票格式</th>
               <th>發票號碼(憑證號碼)</th>
               <th>發票日期</th>
-              <th>應稅 / 未稅</th>
+              <th>是否應稅</th>
               <th>未稅金額</th>
               <th>稅額</th>
               {showExchangeRate && <th>付款匯率</th>}
@@ -282,7 +282,7 @@ export function VoucherDetailsPanel({ app }: Props) {
                     <td>{dashOrValue(row.invoiceFormat)}</td>
                     <td>{dashOrValue(row.invoiceNo)}</td>
                     <td>{dashOrValue(formatDateDisplay(row.invoiceDate))}</td>
-                    <td>{row.taxable}</td>
+                    <td>{dashOrValue(row.taxable)}</td>
                     <td className="num">
                       {formatAmount(row.untaxedAmount, app.overview?.currency)}
                     </td>

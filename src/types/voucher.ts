@@ -45,7 +45,9 @@ export const VOUCHER_STYLES_PREPAY = ['合約', '報價單'] as const
 
 export const INVOICE_FORMATS = ['21', '22', '23', '25', '28'] as const
 
-export type TaxFlag = '應稅' | '未稅'
+export type TaxFlag = '應稅' | '零稅率' | '免稅'
+
+export const TAX_FLAG_OPTIONS: TaxFlag[] = ['應稅', '零稅率', '免稅']
 
 /** 明細狀態。預付單全額回壓後為「核銷完成」；母單全部核銷完才是「已完成」。 */
 export type VoucherDetailStatus =
@@ -63,7 +65,8 @@ export type WritebackStyle = (typeof WRITEBACK_STYLES)[number]
 export interface VoucherLineItem {
   id: string
   name: string
-  taxable: TaxFlag
+  /** 與主檔是否應稅相同；未選時可為空字串 */
+  taxable: TaxFlag | ''
   amount: number
 }
 
@@ -97,7 +100,8 @@ export interface VoucherDetail {
   invoiceFormat: string
   invoiceNo: string
   invoiceDate: string
-  taxable: TaxFlag
+  /** 憑證樣式為發票時必填；其餘可空 */
+  taxable: TaxFlag | ''
   untaxedAmount: number
   taxAmount: number
   payAmount: number

@@ -7,6 +7,7 @@ import {
 import {
   INVOICE_FORMATS,
   PURPOSE_SECOND_FIELD,
+  TAX_FLAG_OPTIONS,
   VOUCHER_PURPOSES,
   formatRemarkNo,
   getVoucherStyles,
@@ -23,13 +24,12 @@ import {
   formatAmount,
   sanitizeAmountInput,
 } from '../utils/money'
-import { calcVoucherTotals } from '../utils/voucherTax'
+import { calcVoucherTotals, normalizeTaxFlag } from '../utils/voucherTax'
 import './AddDetailModal.css'
 
 interface LineDraft {
   id: string
   name: string
-  taxable: TaxFlag
   amount: string
 }
 
@@ -45,14 +45,12 @@ interface Props {
   onSave: (detail: VoucherDetail) => void
 }
 
-const TAX_OPTIONS: TaxFlag[] = ['應稅', '未稅']
-
 function newLineId() {
   return `L-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
 
-function makeLine(taxable: TaxFlag): LineDraft {
-  return { id: newLineId(), name: '', taxable, amount: '' }
+function makeLine(): LineDraft {
+  return { id: newLineId(), name: '', amount: '' }
 }
 
 function toFileMeta(file: File): VoucherFile {
@@ -81,7 +79,7 @@ export function AddDetailModal({
 }: Props) {
   const isEdit = Boolean(initial)
   const invoiceOnly = variant === 'um-invoice'
-  const taxLockedByCurrency = isForeignCurrency(currency)
+  const isForeign = isForeignCurrency(currency)
   const allowDecimal = allowsDecimalAmount(currency)
   const styles = getVoucherStyles(paymentType)
   const startPurpose = invoiceOnly
@@ -113,18 +111,19 @@ export function AddDetailModal({
   const [vendorTaxId, setVendorTaxId] = useState(
     initial?.vendorTaxId ?? defaultTaxId,
   )
-  const [taxable, setTaxable] = useState<TaxFlag>(
-    taxLockedByCurrency ? '未稅' : (initial?.taxable ?? '應稅'),
-  )
+  const [taxable, setTaxable] = useState<TaxFlag | ''>(() => {
+    if (initial) return normalizeTaxFlag(initial.taxable)
+    // 外幣／新建：預設請選擇
+    return ''
+  })
   const [lines, setLines] = useState<LineDraft[]>(() =>
     initial?.lines.length
       ? initial.lines.map((line) => ({
           id: line.id,
           name: line.name,
-          taxable: taxLockedByCurrency ? '未稅' : line.taxable,
           amount: amountInputFromValue(line.amount, allowsDecimalAmount(currency)),
         }))
-      : [makeLine(taxLockedByCurrency ? '未稅' : '應稅')],
+      : [makeLine()],
   )
   const [voucherFile, setVoucherFile] = useState<VoucherFile | null>(
     initial?.voucherFile ?? null,
@@ -136,20 +135,18 @@ export function AddDetailModal({
 
   const second = PURPOSE_SECOND_FIELD[purpose]
   const showInvoiceFormat = voucherStyle === '發票'
-  const effectiveTaxable: TaxFlag = taxLockedByCurrency ? '未稅' : taxable
-  const lineTaxLocked = effectiveTaxable === '未稅'
+  const taxRequired = invoiceOnly || voucherStyle === '發票'
 
   const totals = useMemo(
     () =>
       calcVoucherTotals(
-        effectiveTaxable,
+        taxable,
         lines.map((line) => ({
-          taxable: lineTaxLocked ? '未稅' : line.taxable,
           amount: Number(line.amount) || 0,
         })),
         allowDecimal,
       ),
-    [effectiveTaxable, lines, lineTaxLocked, allowDecimal],
+    [taxable, lines, allowDecimal],
   )
 
   const changePurpose = (next: VoucherPurpose) => {
@@ -163,13 +160,6 @@ export function AddDetailModal({
         ? autoSettlementMonth ?? ''
         : '',
     )
-  }
-
-  const changeMainTax = (next: TaxFlag) => {
-    setTaxable(next)
-    if (next === '未稅') {
-      setLines((prev) => prev.map((line) => ({ ...line, taxable: '未稅' })))
-    }
   }
 
   const updateLine = (id: string, patch: Partial<LineDraft>) => {
@@ -192,6 +182,7 @@ export function AddDetailModal({
     if (!invoiceNo.trim()) next.invoiceNo = '請輸入發票號碼(憑證號碼)'
     if (showInvoiceFormat && !invoiceDate) next.invoiceDate = '請選擇發票日期'
     if (!/^\d{8}$/.test(vendorTaxId)) next.vendorTaxId = '請輸入 8 位數字統編'
+    if (taxRequired && !taxable) next.taxable = '請選擇是否應稅'
     lines.forEach((line) => {
       if (!line.name.trim()) next[`lineName:${line.id}`] = '請輸入明細細項'
       const amountError = amountInputError(line.amount, allowDecimal)
@@ -207,10 +198,10 @@ export function AddDetailModal({
     const savedLines = lines.map((line) => ({
       id: line.id,
       name: line.name.slice(0, 50),
-      taxable: lineTaxLocked ? ('未稅' as const) : line.taxable,
+      taxable,
       amount: commitAmount(line.amount, allowDecimal),
     }))
-    const computed = calcVoucherTotals(effectiveTaxable, savedLines, allowDecimal)
+    const computed = calcVoucherTotals(taxable, savedLines, allowDecimal)
     onSave({
       id: initial?.id ?? `V-${Date.now()}`,
       vendorTaxId,
@@ -223,7 +214,7 @@ export function AddDetailModal({
       invoiceFormat: showInvoiceFormat || invoiceOnly ? invoiceFormat : '',
       invoiceNo: invoiceNo.trim(),
       invoiceDate: showInvoiceFormat || invoiceOnly ? invoiceDate : '',
-      taxable: effectiveTaxable,
+      taxable,
       ...computed,
       status: initial?.status ?? '草稿',
       lines: savedLines,
@@ -391,33 +382,41 @@ export function AddDetailModal({
         </div>
 
         <div className="modal-row">
-          <span className="required">是否應稅</span>
+          <span className={taxRequired ? 'required' : undefined}>是否應稅</span>
           <div className="modal-field">
             <select
-              value={effectiveTaxable}
-              disabled={taxLockedByCurrency}
-              onChange={(e) => changeMainTax(e.target.value as TaxFlag)}
+              value={taxable}
+              className={errors.taxable ? 'error' : undefined}
+              onChange={(e) =>
+                setTaxable(e.target.value as TaxFlag | '')
+              }
             >
-              {TAX_OPTIONS.map((item) => (
-                <option key={item}>{item}</option>
+              <option value="">請選擇</option>
+              {TAX_FLAG_OPTIONS.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
               ))}
             </select>
-            {taxLockedByCurrency && (
-              <p className="field-hint">外幣付款僅能設定未稅。</p>
+            <FieldError message={errors.taxable} />
+            {isForeign && (
+              <p className="field-hint">外幣付款時，是否應稅預設為「請選擇」。</p>
+            )}
+            {!taxRequired && (
+              <p className="field-hint">憑證樣式非發票時，此欄非必填。</p>
             )}
           </div>
         </div>
 
         <div className="sub-block">
           <div className="sub-title">明細細項</div>
-          <div className="line-head">
+          <div className="line-head line-head-simple">
             <span className="required">明細細項</span>
-            <span className="required">是否應稅</span>
             <span className="required">金額</span>
             <span />
           </div>
           {lines.map((line, idx) => (
-            <div className="line-row" key={line.id}>
+            <div className="line-row line-row-simple" key={line.id}>
               <div className="line-cell">
                 <input
                   placeholder="請輸入明細細項"
@@ -428,17 +427,6 @@ export function AddDetailModal({
                 />
                 <FieldError message={errors[`lineName:${line.id}`]} />
               </div>
-              <select
-                value={lineTaxLocked ? '未稅' : line.taxable}
-                disabled={lineTaxLocked}
-                onChange={(e) =>
-                  updateLine(line.id, { taxable: e.target.value as TaxFlag })
-                }
-              >
-                {TAX_OPTIONS.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
               <div className="line-cell">
                 <input
                   inputMode={allowDecimal ? 'decimal' : 'numeric'}
@@ -474,12 +462,7 @@ export function AddDetailModal({
                   <button
                     type="button"
                     className="plus-btn"
-                    onClick={() =>
-                      setLines((prev) => [
-                        ...prev,
-                        makeLine(lineTaxLocked ? '未稅' : '應稅'),
-                      ])
-                    }
+                    onClick={() => setLines((prev) => [...prev, makeLine()])}
                   >
                     +
                   </button>
