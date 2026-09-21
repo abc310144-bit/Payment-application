@@ -27,6 +27,13 @@
   color: #1f1f1f;
 }
 
+.overview-embed-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
 .save-ok {
   margin-bottom: 12px;
   padding: 8px 12px;

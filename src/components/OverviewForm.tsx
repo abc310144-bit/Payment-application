@@ -89,6 +89,8 @@ interface Props {
   initial?: PaymentOverviewForm
   readOnly?: boolean
   title?: string
+  /** 為 false 時不顯示頁首標題（步驟工作區內嵌用） */
+  showTitle?: boolean
   submitLabel?: string
   onSubmit?: (form: PaymentOverviewForm) => void
 }
@@ -97,6 +99,7 @@ export function OverviewForm({
   initial,
   readOnly = false,
   title = '付款總覽',
+  showTitle = true,
   submitLabel = '儲存',
   onSubmit,
 }: Props) {
@@ -270,14 +273,16 @@ export function OverviewForm({
   return (
     <div className="overview-page">
       <form onSubmit={handleSubmit}>
-        <div className="page-header">
-          <h1>{title}</h1>
-          {!locked && onSubmit && (
-            <button type="submit" className="btn btn-primary">
-              {submitLabel}
-            </button>
-          )}
-        </div>
+        {(showTitle || (!locked && onSubmit)) && (
+          <div className="page-header">
+            {showTitle ? <h1>{title}</h1> : <h2 className="overview-embed-title">{title}</h2>}
+            {!locked && onSubmit && (
+              <button type="submit" className="btn btn-primary">
+                {submitLabel}
+              </button>
+            )}
+          </div>
+        )}
 
         {saved && <div className="save-ok">已儲存</div>}
 

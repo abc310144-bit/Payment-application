@@ -23,7 +23,7 @@ export default function App() {
               <Route path="overview" element={<PaymentOverviewPage />} />
               <Route
                 path="applications/:id"
-                element={<Navigate to="overview" replace />}
+                element={<Navigate to="summary" replace />}
               />
               <Route
                 path="applications/:id/overview"
@@ -32,6 +32,10 @@ export default function App() {
               <Route
                 path="applications/:id/details"
                 element={<ApplicationWorkspacePage tab="details" />}
+              />
+              <Route
+                path="applications/:id/summary"
+                element={<ApplicationWorkspacePage tab="summary" />}
               />
               <Route
                 path="applications/:id/writeoff"

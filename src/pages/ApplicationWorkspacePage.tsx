@@ -1,4 +1,6 @@
-import { Link, Navigate, NavLink, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { ApplicationStepper } from '../components/ApplicationStepper'
+import { ApplicationSummaryPanel } from '../components/ApplicationSummaryPanel'
 import { OverviewForm } from '../components/OverviewForm'
 import { VoucherDetailsPanel } from '../components/VoucherDetailsPanel'
 import { WriteoffHistoryPanel } from '../components/WriteoffHistoryPanel'
@@ -22,10 +24,11 @@ import {
 } from '../utils/writeoff'
 import './ApplicationWorkspacePage.css'
 
-type TabKey = 'overview' | 'details' | 'writeoff'
+type TabKey = 'overview' | 'details' | 'summary' | 'writeoff'
 
 export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { role } = useRole()
   const { getById } = useApplications()
   const app = id ? getById(id) : undefined
@@ -43,11 +46,13 @@ export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
 
   const showWriteoff = showWriteoffHistoryTab(app)
   if (tab === 'writeoff' && !showWriteoff) {
-    return <Navigate to={`/applications/${app.id}/details`} replace />
+    return <Navigate to={`/applications/${app.id}/summary`} replace />
   }
 
   const writable = canEditApplication(role, app.status)
   const writeoffType = needsWriteoffHistory(app.paymentType)
+  const step =
+    tab === 'overview' ? 1 : tab === 'details' ? 2 : 3
 
   return (
     <div className="workspace">
@@ -66,59 +71,60 @@ export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
       <div className={`mode-banner${writable ? ' is-edit' : ' is-view'}`}>
         目前操作人：{role}　狀態：{app.status}　
         {writable
-          ? '此狀態可由目前操作人編輯「付款總覽」「款項憑證明細」。'
-          : '此狀態目前操作人不可編輯，付款總覽與款項憑證明細為唯讀。'}
+          ? '此狀態可由目前操作人編輯步驟 1「基本資料」與步驟 2「憑證明細」。步驟 3 為唯讀總覽。'
+          : '此狀態目前操作人不可編輯；步驟內容為唯讀。出納可於步驟 3 完成付款或標記失敗。'}
       </div>
 
       <div className="logic-hint">
         {writeoffType ? (
           showWriteoff ? (
             <>
-              此單為「事後才拿到發票」。財務已完成付款，顯示
-              <strong> 3 個頁籤</strong>。明細可逐列核銷，列狀態為待核銷／部分核銷／核銷完成；全部核銷完成後母單為已完成。
+              此單為「事後才拿到發票」。財務／出納已完成付款後可進行核銷（核銷介面稍後改版；目前仍可從下方連結進入）。
             </>
           ) : (
             <>
-              此單為「事後才拿到發票」。完成付款前只顯示
-              <strong> 2 個頁籤</strong>。
+              此單為「事後才拿到發票」。建檔請依步驟 1 → 2 → 3；完成付款後才進入核銷階段。
             </>
           )
         ) : (
           <>
-            此單為「申請前即可拿到發票」，只顯示
-            <strong> 2 個頁籤</strong>。
+            建檔請依步驟 1「建立基本資料」→ 2「設定款項憑證明細」→ 3「付款申請總覽」。
           </>
         )}
       </div>
 
-      <div className="tabs">
-        <NavLink
-          to={`/applications/${app.id}/overview`}
-          className={({ isActive }) => `tab${isActive ? ' active' : ''}`}
-        >
-          付款總覽
-        </NavLink>
-        <NavLink
-          to={`/applications/${app.id}/details`}
-          className={({ isActive }) => `tab${isActive ? ' active' : ''}`}
-        >
-          款項憑證明細
-        </NavLink>
-        {showWriteoff && (
-          <NavLink
-            to={`/applications/${app.id}/writeoff`}
-            className={({ isActive }) => `tab${isActive ? ' active' : ''}`}
-          >
-            核銷歷史
-          </NavLink>
-        )}
-      </div>
+      <ApplicationStepper current={step} applicationId={app.id} />
 
       {tab === 'overview' && (
-        <OverviewTab key={`${app.id}-${role}-${app.status}`} app={app} writable={writable} />
+        <OverviewTab
+          key={`${app.id}-${role}-${app.status}`}
+          app={app}
+          writable={writable}
+          onSaved={() => navigate(`/applications/${app.id}/details`)}
+        />
       )}
-      {tab === 'details' && <VoucherDetailsPanel app={app} />}
+      {tab === 'details' && (
+        <div className="step-details">
+          <VoucherDetailsPanel app={app} />
+          <div className="step-footer">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => navigate(`/applications/${app.id}/summary`)}
+            >
+              儲存此分頁
+            </button>
+          </div>
+        </div>
+      )}
+      {tab === 'summary' && <ApplicationSummaryPanel app={app} />}
       {tab === 'writeoff' && <WriteoffHistoryPanel app={app} />}
+
+      {showWriteoff && tab !== 'writeoff' && (
+        <div className="writeoff-entry">
+          <Link to={`/applications/${app.id}/writeoff`}>開啟核銷歷史（暫存入口）</Link>
+        </div>
+      )}
     </div>
   )
 }
@@ -167,9 +173,11 @@ function toForm(app: StoredApplication): PaymentOverviewForm {
 function OverviewTab({
   app,
   writable,
+  onSaved,
 }: {
   app: StoredApplication
   writable: boolean
+  onSaved: () => void
 }) {
   const { updateOverview } = useApplications()
 
@@ -180,13 +188,16 @@ function OverviewTab({
         form.vendorName || getPayeeDisplayName(form.vendorId, form.paymentType),
     }
     updateOverview(app.id, overview)
+    onSaved()
   }
 
   return (
     <OverviewForm
       initial={toForm(app)}
       readOnly={!writable}
-      submitLabel="儲存"
+      showTitle
+      title="建立基本資料"
+      submitLabel="儲存此分頁"
       onSubmit={writable ? handleSubmit : undefined}
     />
   )

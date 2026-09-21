@@ -191,12 +191,8 @@ export function GeneralPaymentPage() {
       navigate(`/applications/${row.id}/overview`)
       return
     }
-    if (action === 'view' || action === 'review') {
-      navigate(`/applications/${row.id}/details`)
-      return
-    }
-    if (action === 'writeoff') {
-      navigate(`/applications/${row.id}/writeoff`)
+    if (action === 'view') {
+      navigate(`/applications/${row.id}/summary`)
       return
     }
     if (action === 'void') {

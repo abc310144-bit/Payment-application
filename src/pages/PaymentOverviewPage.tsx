@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { ApplicationStepper } from '../components/ApplicationStepper'
 import { OverviewForm } from '../components/OverviewForm'
 import { useApplications } from '../context/ApplicationContext'
 import { useRole } from '../context/RoleContext'
@@ -31,5 +32,14 @@ export function PaymentOverviewPage() {
     navigate(`/applications/${created.id}/details`)
   }
 
-  return <OverviewForm submitLabel="建立" onSubmit={handleSubmit} />
+  return (
+    <div className="create-wizard">
+      <ApplicationStepper current={1} disableFuture />
+      <OverviewForm
+        title="建立基本資料"
+        submitLabel="儲存此分頁"
+        onSubmit={handleSubmit}
+      />
+    </div>
+  )
 }

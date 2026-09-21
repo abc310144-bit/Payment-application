@@ -90,6 +90,25 @@
   border-bottom-color: #2b5cff;
 }
 
+.step-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.writeoff-entry {
+  margin-top: 20px;
+  padding-top: 12px;
+  border-top: 1px dashed #e8e8e8;
+  font-size: 13px;
+}
+
+.writeoff-entry a {
+  color: #2b5cff;
+}
+
 .summary-card {
   background: #fff;
   border: 1px solid #e8e8e8;

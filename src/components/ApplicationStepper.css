@@ -1,0 +1,77 @@
+.app-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 0;
+  margin-bottom: 16px;
+  padding: 4px 0 12px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.app-step-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.app-step-sep {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin: 0 10px;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid #bfbfbf;
+}
+
+.app-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px 10px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -13px;
+  color: #8c8c8c;
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+a.app-step:hover {
+  color: #2b5cff;
+}
+
+.app-step.is-active {
+  color: #2b5cff;
+  font-weight: 600;
+  border-bottom-color: #2b5cff;
+}
+
+.app-step.is-locked {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.app-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: #8c8c8c;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.app-step.is-active .app-step-index {
+  background: #2b5cff;
+  color: #fff;
+}
+
+@media (max-width: 720px) {
+  .app-step-label {
+    max-width: 6.5em;
+  }
+}
