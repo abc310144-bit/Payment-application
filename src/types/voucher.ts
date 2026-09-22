@@ -7,12 +7,14 @@ export const VOUCHER_PURPOSES = [
   '廣告費',
   '勞務費(KOL、律師、會計師)',
   '通路費用(通路後扣)',
-  'URMART月結廠商',
   '倉庫相關費用',
   '其他費用',
 ] as const
 
-export type VoucherPurpose = (typeof VOUCHER_PURPOSES)[number]
+/** 下拉可選用途；URMART 月結由系統自動帶入，不出現在新增明細選項 */
+export type VoucherPurpose =
+  | (typeof VOUCHER_PURPOSES)[number]
+  | 'URMART月結廠商'
 
 export type SecondFieldKind = 'text' | 'month' | 'dateRange'
 
