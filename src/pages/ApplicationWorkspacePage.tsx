@@ -109,15 +109,13 @@ export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
               >
                 返回
               </button>
-              <div className="step-footer-right">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-step"
-                  onClick={() => navigate(`/applications/${app.id}/summary`)}
-                >
-                  儲存此分頁
-                </button>
-              </div>
+              <button
+                type="button"
+                className="btn btn-primary btn-step"
+                onClick={() => navigate(`/applications/${app.id}/summary`)}
+              >
+                儲存此分頁
+              </button>
             </div>
           </div>
         )}

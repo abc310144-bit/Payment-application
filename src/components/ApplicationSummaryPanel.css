@@ -12,19 +12,11 @@
 
 .summary-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.summary-footer-right {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
   gap: 8px;
-  margin-left: auto;
+  margin-top: 8px;
 }
 
 .summary-footer .btn-step {

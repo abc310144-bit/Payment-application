@@ -536,7 +536,7 @@ export function OverviewForm({
 
         {(onBack || (!locked && onSubmit)) && (
           <div className="form-footer">
-            {onBack ? (
+            {onBack && (
               <button
                 type="button"
                 className="btn btn-default btn-step"
@@ -544,16 +544,12 @@ export function OverviewForm({
               >
                 返回
               </button>
-            ) : (
-              <span />
             )}
-            <div className="form-footer-right">
-              {!locked && onSubmit && (
-                <button type="submit" className="btn btn-primary btn-step">
-                  {submitLabel}
-                </button>
-              )}
-            </div>
+            {!locked && onSubmit && (
+              <button type="submit" className="btn btn-primary btn-step">
+                {submitLabel}
+              </button>
+            )}
           </div>
         )}
       </form>

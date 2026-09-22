@@ -78,17 +78,12 @@
 
 .step-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 24px;
   padding-top: 4px;
-}
-
-.step-footer-right {
-  display: flex;
-  justify-content: flex-end;
-  margin-left: auto;
 }
 
 .step-footer .btn-step {

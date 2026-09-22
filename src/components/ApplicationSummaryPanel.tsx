@@ -278,7 +278,7 @@ export function ApplicationSummaryPanel({ app, onBack }: Props) {
       </section>
 
       <div className="summary-footer">
-        {onBack ? (
+        {onBack && (
           <button
             type="button"
             className="btn btn-default btn-step"
@@ -286,77 +286,73 @@ export function ApplicationSummaryPanel({ app, onBack }: Props) {
           >
             返回
           </button>
-        ) : (
-          <span />
         )}
-        <div className="summary-footer-right">
-          {isCashier ? (
-            <>
-              {canFail && (
-                <button
-                  type="button"
-                  className="btn btn-danger btn-step"
-                  onClick={() => {
-                    if (
-                      !window.confirm(
-                        `確定將 ${app.applicationNo} 標記為付款失敗？`,
-                      )
-                    ) {
-                      return
-                    }
-                    const updated = failPayment(app.id)
-                    if (updated) {
-                      setNotice(`已標記付款失敗 ${updated.applicationNo}`)
-                    }
-                  }}
-                >
-                  付款失敗
-                </button>
-              )}
-              {canPay && (
-                <button
-                  type="button"
-                  className="btn btn-primary btn-step"
-                  onClick={() => setPayOpen(true)}
-                >
-                  完成付款
-                </button>
-              )}
-            </>
-          ) : (
-            <>
-              {canReview && (
-                <>
-                  <button
-                    type="button"
-                    className="btn btn-default btn-step"
-                    onClick={() => setRejectOpen(true)}
-                  >
-                    審核不通過
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-step"
-                    onClick={() => {
-                      approveApplication(app.id)
-                      setNotice('已審核通過')
-                    }}
-                  >
-                    審核通過
-                  </button>
-                </>
-              )}
+        {isCashier ? (
+          <>
+            {canFail && (
+              <button
+                type="button"
+                className="btn btn-danger btn-step"
+                onClick={() => {
+                  if (
+                    !window.confirm(
+                      `確定將 ${app.applicationNo} 標記為付款失敗？`,
+                    )
+                  ) {
+                    return
+                  }
+                  const updated = failPayment(app.id)
+                  if (updated) {
+                    setNotice(`已標記付款失敗 ${updated.applicationNo}`)
+                  }
+                }}
+              >
+                付款失敗
+              </button>
+            )}
+            {canPay && (
               <button
                 type="button"
                 className="btn btn-primary btn-step"
-                disabled={!canExport}
-                onClick={() => void handleExport()}
+                onClick={() => setPayOpen(true)}
               >
-                {exporting ? '導出中…' : '導出送線下審核'}
+                完成付款
               </button>
-            </>
-          )}
-        </div>
+            )}
+          </>
+        ) : (
+          <>
+            {canReview && (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-default btn-step"
+                  onClick={() => setRejectOpen(true)}
+                >
+                  審核不通過
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-step"
+                  onClick={() => {
+                    approveApplication(app.id)
+                    setNotice('已審核通過')
+                  }}
+                >
+                  審核通過
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              className="btn btn-primary btn-step"
+              disabled={!canExport}
+              onClick={() => void handleExport()}
+            >
+              {exporting ? '導出中…' : '導出送線下審核'}
+            </button>
+          </>
+        )}
       </div>
 
       {payOpen && (
