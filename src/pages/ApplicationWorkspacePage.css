@@ -12,6 +12,12 @@
   font-weight: 700;
 }
 
+.view-page-bar .sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
 .workspace-stepper-bar {
   position: relative;
   display: flex;

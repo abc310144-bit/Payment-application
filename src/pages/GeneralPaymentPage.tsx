@@ -145,7 +145,7 @@ export function GeneralPaymentPage() {
     const updated = completePayment(row.id, options)
     if (updated && needsWriteoffHistory(updated.paymentType)) {
       setNotice(
-        `${updated.applicationNo} 已完成付款。此單為事後核銷，核銷歷史頁籤已出現（建檔人／財務均可看見）。`,
+        `${updated.applicationNo} 已完成付款。此單為事後核銷，建檔人可於列表「進行核銷」；核銷歷史可於「檢視」詳情查看。`,
       )
       return
     }
@@ -165,7 +165,7 @@ export function GeneralPaymentPage() {
     ).length
     if (writeoffCount) {
       setNotice(
-        `已完成付款 ${paid.length} 筆。其中 ${writeoffCount} 筆為事後核銷，核銷歷史頁籤已出現。`,
+        `已完成付款 ${paid.length} 筆。其中 ${writeoffCount} 筆為事後核銷，建檔人可於列表「進行核銷」。`,
       )
     } else {
       setNotice(`已完成付款 ${paid.length} 筆`)
@@ -193,6 +193,10 @@ export function GeneralPaymentPage() {
     }
     if (action === 'view') {
       navigate(`/applications/${row.id}/view`)
+      return
+    }
+    if (action === 'writeoff') {
+      navigate(`/applications/${row.id}/writeoff`)
       return
     }
     if (action === 'void') {

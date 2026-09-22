@@ -32,6 +32,8 @@ import {
   canPayApplication,
 } from '../utils/operations'
 import { getPayeeDisplayName } from '../utils/payee'
+import { showWriteoffHistoryTab } from '../utils/writeoff'
+import { WriteoffHistoryPanel } from './WriteoffHistoryPanel'
 import './ApplicationSummaryPanel.css'
 import './VoucherDetailsPanel.css'
 
@@ -95,6 +97,7 @@ export function ApplicationSummaryPanel({ app, onBack }: Props) {
     !exporting &&
     (hasDraft || Boolean(app.exportedFile)) &&
     (!umMode || invoiceOk)
+  const showWriteoffHistory = showWriteoffHistoryTab(app)
 
   const handleExport = async () => {
     if (!canExport || parentLocked) return
@@ -276,6 +279,12 @@ export function ApplicationSummaryPanel({ app, onBack }: Props) {
           </div>
         )}
       </section>
+
+      {showWriteoffHistory && (
+        <section className="summary-card">
+          <WriteoffHistoryPanel app={app} variant="history" />
+        </section>
+      )}
 
       <div className="summary-footer">
         {onBack && (

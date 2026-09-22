@@ -1,9 +1,8 @@
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ApplicationStepper } from '../components/ApplicationStepper'
 import { ApplicationSummaryPanel } from '../components/ApplicationSummaryPanel'
 import { OverviewForm } from '../components/OverviewForm'
 import { VoucherDetailsPanel } from '../components/VoucherDetailsPanel'
-import { WriteoffHistoryPanel } from '../components/WriteoffHistoryPanel'
 import {
   useApplications,
   type ApplicationOverview,
@@ -18,13 +17,10 @@ import { calcExpectedPaymentDate } from '../utils/expectedPaymentDate'
 import { sumAmounts } from '../utils/money'
 import { canEditApplication } from '../utils/operations'
 import { getPayeeDisplayName, defaultPayeeId } from '../utils/payee'
-import {
-  needsWriteoffHistory,
-  showWriteoffHistoryTab,
-} from '../utils/writeoff'
+import { needsWriteoffHistory } from '../utils/writeoff'
 import './ApplicationWorkspacePage.css'
 
-type TabKey = 'overview' | 'details' | 'summary' | 'writeoff'
+type TabKey = 'overview' | 'details' | 'summary'
 
 export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
   const { id } = useParams()
@@ -44,15 +40,9 @@ export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
     )
   }
 
-  const showWriteoff = showWriteoffHistoryTab(app)
-  if (tab === 'writeoff' && !showWriteoff) {
-    return <Navigate to={`/applications/${app.id}/summary`} replace />
-  }
-
   const writable = canEditApplication(role, app.status)
   const writeoffType = needsWriteoffHistory(app.paymentType)
-  const step =
-    tab === 'overview' ? 1 : tab === 'details' ? 2 : 3
+  const step = tab === 'overview' ? 1 : tab === 'details' ? 2 : 3
 
   return (
     <div className="workspace">
@@ -72,15 +62,9 @@ export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
 
       <div className="logic-hint">
         {writeoffType ? (
-          showWriteoff ? (
-            <>
-              此單為「事後才拿到發票」。財務／出納已完成付款後可進行核銷（核銷介面稍後改版；目前仍可從下方連結進入）。
-            </>
-          ) : (
-            <>
-              此單為「事後才拿到發票」。建檔請依步驟 1 → 2 → 3；完成付款後才進入核銷階段。
-            </>
-          )
+          <>
+            此單為「事後才拿到發票」。建檔請依步驟 1 → 2 → 3；完成付款後由建檔人於列表「進行核銷」，核銷歷史可在「檢視」詳情中查看。
+          </>
         ) : (
           <>
             建檔請依步驟 1「建立基本資料」→ 2「設定款項憑證明細」→ 3「付款申請總覽」。
@@ -125,14 +109,7 @@ export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
             onBack={() => navigate(`/applications/${app.id}/details`)}
           />
         )}
-        {tab === 'writeoff' && <WriteoffHistoryPanel app={app} />}
       </div>
-
-      {showWriteoff && tab !== 'writeoff' && (
-        <div className="writeoff-entry">
-          <Link to={`/applications/${app.id}/writeoff`}>開啟核銷歷史（暫存入口）</Link>
-        </div>
-      )}
     </div>
   )
 }

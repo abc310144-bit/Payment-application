@@ -11,6 +11,26 @@
   color: #1f1f1f;
 }
 
+.writeoff-panel.is-history {
+  border: none;
+  border-radius: 0;
+  padding: 16px 0 4px;
+  background: transparent;
+}
+
+.writeoff-history-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+.writeoff-empty-inline {
+  margin: 0;
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
 .writeoff-table-wrap {
   overflow: auto;
 }

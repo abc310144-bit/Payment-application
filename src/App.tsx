@@ -5,6 +5,7 @@ import { ApplicationProvider } from './context/ApplicationContext'
 import { RoleContext } from './context/RoleContext'
 import { ApplicationWorkspacePage } from './pages/ApplicationWorkspacePage'
 import { ApplicationViewPage } from './pages/ApplicationViewPage'
+import { ApplicationWriteoffPage } from './pages/ApplicationWriteoffPage'
 import { GeneralPaymentPage } from './pages/GeneralPaymentPage'
 import { PaymentOverviewPage } from './pages/PaymentOverviewPage'
 import type { UserRole } from './types/payment'
@@ -44,7 +45,7 @@ export default function App() {
               />
               <Route
                 path="applications/:id/writeoff"
-                element={<ApplicationWorkspacePage tab="writeoff" />}
+                element={<ApplicationWriteoffPage />}
               />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
