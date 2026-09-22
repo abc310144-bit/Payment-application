@@ -314,7 +314,7 @@ export function OverviewForm({
           {needsSettlement && (
             <div className="form-row">
               <label className="form-label required" htmlFor="settlementMonth">
-                結算月
+                {channelFee ? '對帳月份' : '結算月'}
               </label>
               <div className="form-control">
                 <input
@@ -328,7 +328,9 @@ export function OverviewForm({
                 <p className="field-hint">
                   {umMonthly
                     ? '可自選結算月。設定後，新增發票將自動帶入款項用途與結算月，並依廠商帶入該月月結金額。'
-                    : '設定後，新增明細將自動帶入款項用途以及結算月。'}
+                    : channelFee
+                      ? '設定後，新增明細將自動帶入款項用途以及對帳月份。'
+                      : '設定後，新增明細將自動帶入款項用途以及結算月。'}
                 </p>
                 {showError('settlementMonth') && (
                   <p className="field-error">此欄位為必填</p>

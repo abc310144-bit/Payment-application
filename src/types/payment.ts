@@ -149,7 +149,7 @@ export const PAYMENT_TYPE_META: Record<PaymentType, PaymentTypeMeta> = {
     type: '通路費用 (通路後扣)',
     title: '通路費用（通路後扣）',
     description:
-      '設定結算月後選擇付款對象，憑證明細以發票新增；可新增多張。導出後線下審核，財務通過即已完成。',
+      '設定對帳月份後選擇付款對象，憑證明細以發票新增；可新增多張。導出後線下審核，財務通過即已完成。',
     ruleCategory: '待確認',
     needsSettlementMonth: true,
   },

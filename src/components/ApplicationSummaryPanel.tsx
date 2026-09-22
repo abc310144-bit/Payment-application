@@ -10,6 +10,7 @@ import {
 import { useRole } from '../context/RoleContext'
 import {
   formatExchangeRate,
+  isChannelFeeType,
   isForeignCurrency,
   isInvoiceOnlyType,
   isUmMonthlyType,
@@ -169,7 +170,9 @@ export function ApplicationSummaryPanel({ app, onBack }: Props) {
           ) : null}
           {overview?.settlementMonth ? (
             <div>
-              <dt>結算月</dt>
+              <dt>
+                {isChannelFeeType(app.paymentType) ? '對帳月份' : '結算月'}
+              </dt>
               <dd>{overview.settlementMonth}</dd>
             </div>
           ) : null}

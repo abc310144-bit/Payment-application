@@ -25,7 +25,7 @@ export const PURPOSE_SECOND_FIELD: Record<
   '旅費(國內外出差費用)': { label: '出差期間', kind: 'dateRange' },
   廣告費: { label: '結算月', kind: 'month' },
   '勞務費(KOL、律師、會計師)': { label: '勞務期間', kind: 'dateRange' },
-  '通路費用(通路後扣)': { label: '結算月', kind: 'month' },
+  '通路費用(通路後扣)': { label: '對帳月份', kind: 'month' },
   URMART月結廠商: { label: '結算月', kind: 'month' },
   倉庫相關費用: { label: '結算月', kind: 'month' },
   其他費用: { label: '使用期間', kind: 'dateRange' },
