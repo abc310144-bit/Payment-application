@@ -1,3 +1,17 @@
+.view-page-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.view-page-bar h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
 .workspace-stepper-bar {
   position: relative;
   display: flex;
