@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { CompletePaymentModal } from './CompletePaymentModal'
+import { RejectReasonModal } from './RejectReasonModal'
 import { StatusBadge } from './StatusBadge'
 import { ViewFilesModal } from './ViewFilesModal'
 import {
@@ -11,10 +12,20 @@ import {
   formatExchangeRate,
   isForeignCurrency,
   isInvoiceOnlyType,
+  isUmMonthlyType,
   PAYMENT_TYPE_META,
 } from '../types/payment'
 import { dashOrValue, type VoucherDetail } from '../types/voucher'
 import { formatDateDisplay } from '../utils/expectedPaymentDate'
+import {
+  downloadExistingVoucherFile,
+  downloadVoucherPdf,
+} from '../utils/exportVoucherPdf'
+import {
+  invoiceAmountSum,
+  invoiceSumHint,
+  invoiceSumMatchesTarget,
+} from '../utils/invoiceMatch'
 import { formatAmount, formatMoney } from '../utils/money'
 import {
   canMarkPaymentFailed,
@@ -26,6 +37,7 @@ import './VoucherDetailsPanel.css'
 
 interface Props {
   app: StoredApplication
+  onBack?: () => void
 }
 
 function displayDate(value: string | null | undefined) {
@@ -33,11 +45,20 @@ function displayDate(value: string | null | undefined) {
   return value
 }
 
-export function ApplicationSummaryPanel({ app }: Props) {
+export function ApplicationSummaryPanel({ app, onBack }: Props) {
   const { role } = useRole()
-  const { completePayment, failPayment } = useApplications()
+  const {
+    completePayment,
+    failPayment,
+    exportVouchers,
+    saveExportedFile,
+    approveApplication,
+    rejectApplication,
+  } = useApplications()
   const [payOpen, setPayOpen] = useState(false)
   const [viewing, setViewing] = useState<VoucherDetail | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [rejectOpen, setRejectOpen] = useState(false)
   const [notice, setNotice] = useState('')
 
   const overview = app.overview
@@ -46,11 +67,61 @@ export function ApplicationSummaryPanel({ app }: Props) {
     overview?.vendorName ||
     getPayeeDisplayName(overview?.vendorId || '', app.paymentType) ||
     '-'
+  const isCashier = role === '出納'
   const canPay = canPayApplication(role, app.status, app.paymentType)
   const canFail = canMarkPaymentFailed(role, app.status, app.paymentType)
+  const canReview = role === '財務' && app.status === '待審核'
   const invoiceOnly = isInvoiceOnlyType(app.paymentType)
   const needRate = isForeignCurrency(currency)
   const showExchangeRate = isForeignCurrency(currency)
+
+  const umMode = isUmMonthlyType(app.paymentType) && Boolean(overview?.monthlyTotals)
+  const parentLocked =
+    app.status === '已作廢' || app.status === '已完成' || app.status === '付款失敗'
+  const hasDraft = app.vouchers.some((item) => item.status === '草稿')
+  const hasAnyDetail = app.vouchers.length > 0
+  const invoiceSum = useMemo(
+    () => invoiceAmountSum(app.vouchers.map((item) => item.payAmount)),
+    [app.vouchers],
+  )
+  const invoiceTarget = overview?.monthlyTotals?.companyInvoiceAmount ?? 0
+  const invoiceOk =
+    !umMode ||
+    invoiceSumMatchesTarget(invoiceSum, invoiceTarget, currency)
+  const canExport =
+    !isCashier &&
+    hasAnyDetail &&
+    !parentLocked &&
+    !exporting &&
+    (hasDraft || Boolean(app.exportedFile)) &&
+    (!umMode || invoiceOk)
+
+  const handleExport = async () => {
+    if (!canExport || parentLocked) return
+
+    if (!hasDraft && app.exportedFile) {
+      downloadExistingVoucherFile(app.exportedFile)
+      return
+    }
+
+    if (!hasDraft) return
+    if (umMode && !invoiceOk) {
+      window.alert(invoiceSumHint(invoiceSum, invoiceTarget, currency))
+      return
+    }
+
+    setExporting(true)
+    try {
+      const file = await downloadVoucherPdf(app)
+      saveExportedFile(app.id, file)
+      exportVouchers(app.id)
+      setNotice('已導出送線下審核')
+    } catch {
+      window.alert('導出 PDF 失敗，請再試一次。')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <div className="summary-panel">
@@ -206,34 +277,87 @@ export function ApplicationSummaryPanel({ app }: Props) {
         )}
       </section>
 
-      {(canPay || canFail) && (
-        <div className="summary-footer">
-          {canFail && (
-            <button
-              type="button"
-              className="btn btn-danger btn-step"
-              onClick={() => {
-                if (!window.confirm(`確定將 ${app.applicationNo} 標記為付款失敗？`)) {
-                  return
-                }
-                const updated = failPayment(app.id)
-                if (updated) setNotice(`已標記付款失敗 ${updated.applicationNo}`)
-              }}
-            >
-              付款失敗
-            </button>
-          )}
-          {canPay && (
-            <button
-              type="button"
-              className="btn btn-primary btn-step"
-              onClick={() => setPayOpen(true)}
-            >
-              完成付款
-            </button>
+      <div className="summary-footer">
+        {onBack ? (
+          <button
+            type="button"
+            className="btn btn-default btn-step"
+            onClick={onBack}
+          >
+            返回
+          </button>
+        ) : (
+          <span />
+        )}
+        <div className="summary-footer-right">
+          {isCashier ? (
+            <>
+              {canFail && (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-step"
+                  onClick={() => {
+                    if (
+                      !window.confirm(
+                        `確定將 ${app.applicationNo} 標記為付款失敗？`,
+                      )
+                    ) {
+                      return
+                    }
+                    const updated = failPayment(app.id)
+                    if (updated) {
+                      setNotice(`已標記付款失敗 ${updated.applicationNo}`)
+                    }
+                  }}
+                >
+                  付款失敗
+                </button>
+              )}
+              {canPay && (
+                <button
+                  type="button"
+                  className="btn btn-primary btn-step"
+                  onClick={() => setPayOpen(true)}
+                >
+                  完成付款
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              {canReview && (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-default btn-step"
+                    onClick={() => setRejectOpen(true)}
+                  >
+                    審核不通過
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-step"
+                    onClick={() => {
+                      approveApplication(app.id)
+                      setNotice('已審核通過')
+                    }}
+                  >
+                    審核通過
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                className="btn btn-primary btn-step"
+                disabled={!canExport}
+                onClick={() => void handleExport()}
+              >
+                {exporting ? '導出中…' : '導出送線下審核'}
+              </button>
+            </>
           )}
         </div>
-      )}
+      </div>
 
       {payOpen && (
         <CompletePaymentModal
@@ -255,6 +379,17 @@ export function ApplicationSummaryPanel({ app }: Props) {
           voucherFile={viewing.voucherFile}
           attachments={viewing.attachments}
           onClose={() => setViewing(null)}
+        />
+      )}
+
+      {rejectOpen && (
+        <RejectReasonModal
+          onClose={() => setRejectOpen(false)}
+          onConfirm={(reason) => {
+            rejectApplication(app.id, reason)
+            setRejectOpen(false)
+            setNotice('已審核不通過')
+          }}
         />
       )}
     </div>

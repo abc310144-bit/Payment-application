@@ -45,6 +45,7 @@ export function PaymentOverviewPage() {
         showTitle={false}
         title="建立基本資料"
         submitLabel="儲存此分頁"
+        onBack={() => navigate('/')}
         onSubmit={handleSubmit}
       />
     </div>

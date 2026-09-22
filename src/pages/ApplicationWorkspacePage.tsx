@@ -94,6 +94,7 @@ export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
             key={`${app.id}-${role}-${app.status}`}
             app={app}
             writable={writable}
+            onBack={() => navigate('/')}
             onSaved={() => navigate(`/applications/${app.id}/details`)}
           />
         )}
@@ -103,15 +104,29 @@ export function ApplicationWorkspacePage({ tab }: { tab: TabKey }) {
             <div className="step-footer">
               <button
                 type="button"
-                className="btn btn-primary btn-step"
-                onClick={() => navigate(`/applications/${app.id}/summary`)}
+                className="btn btn-default btn-step"
+                onClick={() => navigate(`/applications/${app.id}/overview`)}
               >
-                儲存此分頁
+                返回
               </button>
+              <div className="step-footer-right">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-step"
+                  onClick={() => navigate(`/applications/${app.id}/summary`)}
+                >
+                  儲存此分頁
+                </button>
+              </div>
             </div>
           </div>
         )}
-        {tab === 'summary' && <ApplicationSummaryPanel app={app} />}
+        {tab === 'summary' && (
+          <ApplicationSummaryPanel
+            app={app}
+            onBack={() => navigate(`/applications/${app.id}/details`)}
+          />
+        )}
         {tab === 'writeoff' && <WriteoffHistoryPanel app={app} />}
       </div>
 
@@ -169,10 +184,12 @@ function OverviewTab({
   app,
   writable,
   onSaved,
+  onBack,
 }: {
   app: StoredApplication
   writable: boolean
   onSaved: () => void
+  onBack: () => void
 }) {
   const { updateOverview } = useApplications()
 
@@ -193,6 +210,7 @@ function OverviewTab({
       showTitle={false}
       title="建立基本資料"
       submitLabel="儲存此分頁"
+      onBack={onBack}
       onSubmit={writable ? handleSubmit : undefined}
     />
   )

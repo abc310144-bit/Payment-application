@@ -64,9 +64,17 @@
 
 .step-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
   margin-top: 24px;
   padding-top: 4px;
+}
+
+.step-footer-right {
+  display: flex;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .step-footer .btn-step {

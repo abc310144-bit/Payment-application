@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { AddDetailModal } from './AddDetailModal'
-import { RejectReasonModal } from './RejectReasonModal'
 import { StatusBadge } from './StatusBadge'
 import { ViewFilesModal } from './ViewFilesModal'
 import {
@@ -12,10 +11,6 @@ import { isPettyCashType } from '../data/mockEmployees'
 import { getVendorTaxId } from '../data/mockVendors'
 import { formatDateDisplay } from '../utils/expectedPaymentDate'
 import { formatAmount } from '../utils/money'
-import {
-  downloadExistingVoucherFile,
-  downloadVoucherPdf,
-} from '../utils/exportVoucherPdf'
 import {
   formatExchangeRate,
   isForeignCurrency,
@@ -45,21 +40,12 @@ interface Props {
 
 export function VoucherDetailsPanel({ app }: Props) {
   const { role } = useRole()
-  const {
-    saveVoucher,
-    removeVoucher,
-    exportVouchers,
-    saveExportedFile,
-    approveApplication,
-    rejectApplication,
-  } = useApplications()
+  const { saveVoucher, removeVoucher } = useApplications()
 
   const [pageSize, setPageSize] = useState(20)
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
   const [editing, setEditing] = useState<VoucherDetail | undefined>()
   const [viewing, setViewing] = useState<VoucherDetail | null>(null)
-  const [exporting, setExporting] = useState(false)
-  const [rejectOpen, setRejectOpen] = useState(false)
 
   const defaultTaxId = isUmMonthlyType(app.paymentType)
     ? app.overview?.vendorTaxId || ''
@@ -83,12 +69,9 @@ export function VoucherDetailsPanel({ app }: Props) {
   }, [app.paymentType, app.overview?.settlementMonth])
 
   const canAdd = canAddVoucherDetail(role, app.status)
-  const hasDraft = app.vouchers.some((item) => item.status === '草稿')
-  const canReview = role === '財務' && app.status === '待審核'
   /** 已完成／已作廢／付款失敗：除檢視外不可操作 */
   const parentLocked =
     app.status === '已作廢' || app.status === '已完成' || app.status === '付款失敗'
-  const hasAnyDetail = app.vouchers.length > 0
   const invoiceSum = invoiceAmountSum(app.vouchers.map((item) => item.payAmount))
   const invoiceTarget = monthlyTotals?.companyInvoiceAmount ?? 0
   const invoiceOk =
@@ -98,13 +81,6 @@ export function VoucherDetailsPanel({ app }: Props) {
       invoiceTarget,
       app.overview?.currency,
     )
-  const canExport =
-    role !== '出納' &&
-    hasAnyDetail &&
-    !parentLocked &&
-    !exporting &&
-    (hasDraft || Boolean(app.exportedFile)) &&
-    (!umMode || invoiceOk)
   const rows = app.vouchers.slice(0, pageSize)
   const showExchangeRate = isForeignCurrency(app.overview?.currency)
   const colCount = (showExchangeRate ? 15 : 14) - (invoiceOnlyMode ? 1 : 0)
@@ -117,33 +93,6 @@ export function VoucherDetailsPanel({ app }: Props) {
   const openEdit = (row: VoucherDetail) => {
     setEditing(row)
     setModal('edit')
-  }
-
-  const handleExport = async () => {
-    if (!canExport || parentLocked) return
-
-    // 無草稿但已有導出檔：重複下載同一份，狀態不變
-    if (!hasDraft && app.exportedFile) {
-      downloadExistingVoucherFile(app.exportedFile)
-      return
-    }
-
-    if (!hasDraft) return
-    if (umMode && !invoiceOk) {
-      window.alert(invoiceSumHint(invoiceSum, invoiceTarget, app.overview?.currency))
-      return
-    }
-
-    setExporting(true)
-    try {
-      const file = await downloadVoucherPdf(app)
-      saveExportedFile(app.id, file)
-      exportVouchers(app.id)
-    } catch {
-      window.alert('導出 PDF 失敗，請再試一次。')
-    } finally {
-      setExporting(false)
-    }
   }
 
   return (
@@ -170,30 +119,6 @@ export function VoucherDetailsPanel({ app }: Props) {
             onClick={() => canAdd && openAdd()}
           >
             {invoiceOnlyMode ? '+ 新增發票' : '+ 新增明細'}
-          </button>
-          <button
-            type="button"
-            className="btn btn-default"
-            disabled={!canExport}
-            onClick={() => void handleExport()}
-          >
-            {exporting ? '導出中…' : '導出文件'}
-          </button>
-          <button
-            type="button"
-            className={canReview ? 'btn btn-primary' : 'btn btn-disabled'}
-            disabled={!canReview}
-            onClick={() => canReview && approveApplication(app.id)}
-          >
-            審核通過
-          </button>
-          <button
-            type="button"
-            className={canReview ? 'btn btn-default' : 'btn btn-disabled'}
-            disabled={!canReview}
-            onClick={() => canReview && setRejectOpen(true)}
-          >
-            審核不通過
           </button>
         </div>
       </div>
@@ -332,10 +257,10 @@ export function VoucherDetailsPanel({ app }: Props) {
 
       <p className="details-foot">
         {umMode
-          ? '請點「+ 新增發票」補上憑證。發票加總與貴公司開立發票金額相差在 ±3 元以內才可導出／送審（臺幣、外幣皆適用）。彙總欄位唯讀。'
+          ? '請點「+ 新增發票」補上憑證。發票加總與貴公司開立發票金額相差在 ±3 元以內才可於步驟 3 導出送審（臺幣、外幣皆適用）。彙總欄位唯讀。'
           : invoiceOnlyMode
-            ? '請點「+ 新增發票」新增一至多張發票。首次導出會下載該批草稿發票 PDF，並將草稿改為待審核；財務審核通過後單據直接已完成。'
-            : '請點「+ 新增明細」以列出憑證明細。本表僅顯示已保存之憑證。首次導出會下載該批草稿明細 PDF，並將草稿改為待審核；之後可重複下載同一份檔案且狀態不變。母單已完成後僅可檢視。'}
+            ? '請點「+ 新增發票」新增一至多張發票。於步驟 3「導出送線下審核」後草稿改為待審核；財務於步驟 3 審核通過後單據直接已完成。'
+            : '請點「+ 新增明細」以列出憑證明細。本表僅顯示已保存之憑證。於步驟 3「導出送線下審核」後草稿改為待審核；之後可重複下載且狀態不變。母單已完成後僅可檢視。'}
       </p>
 
       {modal && (
@@ -360,16 +285,6 @@ export function VoucherDetailsPanel({ app }: Props) {
           voucherFile={viewing.voucherFile}
           attachments={viewing.attachments}
           onClose={() => setViewing(null)}
-        />
-      )}
-
-      {rejectOpen && (
-        <RejectReasonModal
-          onClose={() => setRejectOpen(false)}
-          onConfirm={(reason) => {
-            rejectApplication(app.id, reason)
-            setRejectOpen(false)
-          }}
         />
       )}
     </div>
