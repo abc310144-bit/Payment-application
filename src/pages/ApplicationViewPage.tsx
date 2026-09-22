@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { ApplicationSummaryPanel } from '../components/ApplicationSummaryPanel'
 import { useApplications } from '../context/ApplicationContext'
 import './ApplicationWorkspacePage.css'
@@ -6,7 +6,6 @@ import './ApplicationWorkspacePage.css'
 /** 列表「檢視」：僅顯示付款申請詳情，不帶 1-2-3 步驟 */
 export function ApplicationViewPage() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const { getById } = useApplications()
   const app = id ? getById(id) : undefined
 
@@ -31,10 +30,7 @@ export function ApplicationViewPage() {
       </div>
 
       <div className="workspace-panel">
-        <ApplicationSummaryPanel
-          app={app}
-          onBack={() => navigate('/')}
-        />
+        <ApplicationSummaryPanel app={app} />
       </div>
     </div>
   )
