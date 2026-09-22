@@ -9,6 +9,7 @@ function Breadcrumb() {
   let current = '一般付款'
   if (pathname.startsWith('/overview')) current = '新增付款申請'
   else if (pathname.includes('/writeoff')) current = '核銷歷史'
+  else if (pathname.includes('/view')) current = '付款申請詳情'
   else if (pathname.includes('/summary')) current = '付款申請總覽'
   else if (pathname.includes('/details')) current = '設定款項憑證明細'
   else if (pathname.includes('/overview')) current = '建立基本資料'

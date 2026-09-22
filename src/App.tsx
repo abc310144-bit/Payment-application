@@ -4,6 +4,7 @@ import { AppLayout } from './components/AppLayout'
 import { ApplicationProvider } from './context/ApplicationContext'
 import { RoleContext } from './context/RoleContext'
 import { ApplicationWorkspacePage } from './pages/ApplicationWorkspacePage'
+import { ApplicationViewPage } from './pages/ApplicationViewPage'
 import { GeneralPaymentPage } from './pages/GeneralPaymentPage'
 import { PaymentOverviewPage } from './pages/PaymentOverviewPage'
 import type { UserRole } from './types/payment'
@@ -23,7 +24,11 @@ export default function App() {
               <Route path="overview" element={<PaymentOverviewPage />} />
               <Route
                 path="applications/:id"
-                element={<Navigate to="summary" replace />}
+                element={<Navigate to="view" replace />}
+              />
+              <Route
+                path="applications/:id/view"
+                element={<ApplicationViewPage />}
               />
               <Route
                 path="applications/:id/overview"

@@ -192,7 +192,7 @@ export function GeneralPaymentPage() {
       return
     }
     if (action === 'view') {
-      navigate(`/applications/${row.id}/summary`)
+      navigate(`/applications/${row.id}/view`)
       return
     }
     if (action === 'void') {
